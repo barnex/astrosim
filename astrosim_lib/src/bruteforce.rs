@@ -1,6 +1,8 @@
 use super::prelude::*;
 
-pub fn set_accel(particles: &[Particle], acc: &mut Vec<vec2>) {
+pub fn set_accel(particles: &[Particle], acc: &mut [vec2]) {
+	debug_assert!(particles.len() == acc.len());
+
 	for i in 0..acc.len() {
 		acc[i] = vec2::ZERO;
 	}
@@ -22,14 +24,6 @@ pub fn accel(particles: &[Particle]) -> Vec<vec2> {
 	let mut acc = zeros(particles.len());
 	set_accel(particles, &mut acc);
 	acc
-}
-
-fn zeros(n: usize) -> Vec<vec2> {
-	let mut dst = Vec::with_capacity(n);
-	for _i in 0..n {
-		dst.push(vec2::ZERO);
-	}
-	dst
 }
 
 #[cfg(test)]
