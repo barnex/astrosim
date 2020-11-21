@@ -2,4 +2,5 @@
 
 members = [
 	"astrosim_lib",
+	"astrosim_cli",
 ]
