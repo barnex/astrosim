@@ -3,6 +3,9 @@
 [[package]]
 name = "astrosim_cli"
 version = "0.1.0"
+dependencies = [
+ "astrosim_lib",
+]
 
 [[package]]
 name = "astrosim_lib"
