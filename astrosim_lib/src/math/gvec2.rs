@@ -10,6 +10,16 @@ pub struct gvec2<T: Copy> {
 	pub y: T,
 }
 
+impl<T> PartialEq for gvec2<T>
+where
+	T: PartialEq + Copy,
+{
+	#[inline]
+	fn eq(&self, rhs: &Self) -> bool {
+		self.x == rhs.x && self.y == rhs.y
+	}
+}
+
 impl<T: Copy> gvec2<T> {
 	#[inline]
 	pub fn new(x: T, y: T) -> Self {
@@ -120,8 +130,8 @@ where
 {
 	#[inline]
 	fn sub_assign(&mut self, rhs: Self) {
-		self.x -= rhs.y;
-		self.x -= rhs.y;
+		self.x -= rhs.x;
+		self.y -= rhs.y;
 	}
 }
 

@@ -1,8 +1,13 @@
 extern crate astrosim_lib;
+use astrosim_lib::bruteforce;
 use astrosim_lib::prelude::*;
-//use astrosim_cli::*;
 
 fn main() {
-	let mut u = Universe::new();
-	u.push(Particle::new(1.0, vec2(2.0, 3.0), vec2(4.0, 5.0)))
+	let p = vec![
+		Particle::new(2.0, vec2(-1.0, 0.0), vec2(0.0, 0.0)),
+		Particle::new(1.0, vec2(1.0, 0.0), vec2(0.0, 0.0)),
+	];
+
+	let acc = bruteforce::accel(&p);
+	acc.iter().for_each(|x| println!("{}", x));
 }

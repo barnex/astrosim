@@ -4,6 +4,7 @@ use std::ops::*;
 #[allow(non_camel_case_types)]
 pub type fvec2 = gvec2<f32>;
 
+#[inline]
 pub fn fvec2(x: f32, y: f32) -> fvec2 {
 	fvec2 { x, y }
 }
