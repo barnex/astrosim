@@ -7,3 +7,6 @@ edition = "2018"
 
 [dependencies]
 astrosim_lib = { path = "../astrosim_lib" }
+structopt = "0.3"
+csv = "1.1"
+serde = { version = "1.0", features = ["derive"] }
