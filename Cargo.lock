@@ -8,5 +8,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "astrosim_gui"
+version = "0.1.0"
+dependencies = [
+ "astrosim_lib",
+]
+
+[[package]]
 name = "astrosim_lib"
 version = "0.1.0"

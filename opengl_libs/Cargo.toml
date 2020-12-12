@@ -1,0 +1,10 @@
+[workspace]
+
+members = [
+    "gl_img",
+    "gl_obj",
+    "gl_safe",
+    "gl_vec",
+    "gl_win",
+    "just_a_window",
+]
