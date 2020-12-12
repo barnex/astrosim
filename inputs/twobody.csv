@@ -1,0 +1,5 @@
+# two identical particles orbiting their centre of mass (0, 0)
+# with unit distance, 2 pi period.
+# m x y vx vy
+4.0,    1.0,0.0,   0.0, 1.0
+4.0,   -1.0,0.0,   0.0,-1.0

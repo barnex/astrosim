@@ -1,0 +1,5 @@
+# A massless body orbiting a stationary attractor.
+# Unit distance, 2 pi orbital period.
+# m    x,y        vx,vy
+1.0,   0.0,0.0,   0.0,0.0
+0.0,   1.0,0.0,   0.0,1.0

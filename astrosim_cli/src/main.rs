@@ -6,9 +6,6 @@ use astrosim_lib::prelude::*;
 use astrosim_lib::verlet;
 use serde::Deserialize;
 use std::error::Error;
-use std::fs::File;
-use std::io::Read;
-use std::process::exit;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
