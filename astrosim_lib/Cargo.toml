@@ -5,7 +5,11 @@ authors = ["arne"]
 edition = "2018"
 
 [[bin]]
-name = "bench"
-path = "bench/benchmark.rs"
+name = "benchmark"
+path = "bin/benchmark.rs"
+
+[[bin]]
+name = "convergence"
+path = "bin/convergence.rs"
 
 [dependencies]

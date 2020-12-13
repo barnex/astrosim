@@ -24,10 +24,12 @@ fn main() {
 
 	let mut particles = particles_from_args(&args);
 
-	let mut acc = zeros(particles.len());
-	for i in 0..1000 {
-		bruteforce::set_accel(&particles, &mut acc);
-		verlet::step(&mut particles, &acc, args.dt);
+	let total_time = 10.0;
+	let dt = args.dt;
+	for i in 0..100 {
+		verlet::advance(&mut particles, total_time / 100.0, dt);
+		//bruteforce::set_accel(&particles, &mut acc);
+		//verlet::step(&mut particles, &acc, args.dt);
 		print_positions(&particles);
 	}
 }
