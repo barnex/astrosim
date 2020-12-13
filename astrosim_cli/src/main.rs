@@ -27,7 +27,12 @@ fn main() {
 	let total_time = 10.0;
 	let dt = args.dt;
 	for i in 0..100 {
-		verlet::advance(&mut particles, total_time / 100.0, dt);
+		verlet::advance(
+			bruteforce::set_accel,
+			&mut particles,
+			total_time / 100.0,
+			dt,
+		);
 		//bruteforce::set_accel(&particles, &mut acc);
 		//verlet::step(&mut particles, &acc, args.dt);
 		print_positions(&particles);
