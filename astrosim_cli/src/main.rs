@@ -10,9 +10,25 @@ use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Args {
+	/// Total run time.
+	#[structopt(long, default_value = "1.0")]
+	t: f64,
+
 	/// Verlet integration time step.
 	#[structopt(long, default_value = "0.001")]
 	dt: f64,
+
+	/// Number of times to save the output.
+	#[structopt(long, default_value = "100")]
+	outputs: i32,
+
+	/// Render this portion of the world.
+	#[structopt(long, default_value = "2.0")]
+	render_scale: f64,
+
+	/// Render this number of pixels (for image width and height).
+	#[structopt(long, default_value = "255")]
+	render_pix: u32,
 
 	/// Files to process
 	#[structopt(name = "FILE")]
@@ -24,13 +40,14 @@ fn main() {
 
 	let mut particles = particles_from_args(&args);
 
-	let total_time = 10.0;
+	let total_time = args.t;
 	let dt = args.dt;
-	for i in 0..100 {
+	let num_outputs = args.outputs;
+	for _i in 0..num_outputs {
 		verlet::advance(
 			bruteforce::set_accel,
 			&mut particles,
-			total_time / 100.0,
+			total_time / (num_outputs as f64),
 			dt,
 		);
 		//bruteforce::set_accel(&particles, &mut acc);
@@ -47,6 +64,7 @@ fn print_positions(particles: &[Particle]) {
 }
 
 // construct particles list from command line arguments.
+// TODO: concatenate multiple files
 fn particles_from_args(args: &Args) -> Particles {
 	if args.files.len() != 1 {
 		fatal(&format!(

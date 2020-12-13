@@ -37,7 +37,7 @@ where
 // `acc` must contain the accelerations at the beginning of the step,
 // will be overwritten by the accelerations at the end of the step
 // (thus ready for re-use by the next step).
-fn step<F>(accel: F, particles: &mut [Particle], mut acc: &mut [vec2], dt: f64)
+fn step<F>(accel: F, particles: &mut [Particle], acc: &mut [vec2], dt: f64)
 where
 	F: Fn(&[Particle], &mut [vec2]), // acceleration function
 {
@@ -49,7 +49,7 @@ where
 	}
 
 	// stage 2: update acceleration, do 1/2 kick
-	accel(&particles, &mut acc);
+	accel(&particles, acc);
 	for (i, p) in particles.iter_mut().enumerate() {
 		p.vel += acc[i] * (dt / 2.0);
 	}
