@@ -1,77 +1,74 @@
-use super::bruteforce;
 use super::prelude::*;
 
 pub fn advance<F>(accel: F, particles: &mut [Particle], total_time: f64, dt: f64)
 where
-	F: Fn(&[Particle], &mut [vec2]),
+	F: Fn(&[Particle], &mut [vec2]), // acceleration function
 {
-	// check that total_time and dt are not accidentally swapped
+	check_dt(total_time, dt);
+	let mut acc = zeros(particles.len()); // accelearation buffer
+	accel(&particles, &mut acc); // initial acceleration to seed step 1.
+
+	let mut t = 0.0; // current time
+
+	// take all but the final time step,
+	// so that we definitely do not step too far.
+	while t + dt < total_time {
+		step(&accel, particles, &mut acc, dt);
+		t += dt;
+	}
+	// the final time step may have to be truncated
+	// to fit total_time precisely
+	let final_dt = total_time - t;
+	if final_dt > 0.0 {
+		step(&accel, particles, &mut acc, final_dt);
+	}
+}
+
+// Take a single leapfrog integration step
+// (https://en.wikipedia.org/wiki/Leapfrog_integration).
+//
+// Uses "kick-drift-kick" form, allowing for a variable time step.
+//
+// This method has the "First Same As Last" (FSAL) property:
+// The acceleration at the beginning of step N is identical
+// to the last accelaration of step N-1, and need not be re-calcualted
+// (except before the very first step).
+//
+// `acc` must contain the accelerations at the beginning of the step,
+// will be overwritten by the accelerations at the end of the step
+// (thus ready for re-use by the next step).
+fn step<F>(accel: F, particles: &mut [Particle], mut acc: &mut [vec2], dt: f64)
+where
+	F: Fn(&[Particle], &mut [vec2]), // acceleration function
+{
+	// stage 1: 1/2 kick + drift
+	// re-use the last acceleration from the previous step.
+	for (i, p) in particles.iter_mut().enumerate() {
+		p.vel += acc[i] * (dt / 2.0);
+		p.pos += p.vel * dt;
+	}
+
+	// stage 2: update acceleration, do 1/2 kick
+	accel(&particles, &mut acc);
+	for (i, p) in particles.iter_mut().enumerate() {
+		p.vel += acc[i] * (dt / 2.0);
+	}
+}
+
+// check that total_time and dt are not accidentally swapped
+fn check_dt(total_time: f64, dt: f64) {
 	if total_time < dt {
 		panic!(
 			"advance: total_time ({}) must be larger than dt ({})",
 			total_time, dt
 		)
 	}
-
-	let mut acc1 = zeros(particles.len()); // accelearation buffer
-	let mut acc2 = zeros(particles.len()); // accelearation buffer
-	let mut t = 0.0; // current time
-
-	// take all but the very last time step
-
-	let mut step = |dt| {
-		accel(&particles, &mut acc1);
-		for (i, p) in particles.iter_mut().enumerate() {
-			p.vel += acc1[i] * (dt / 2.0);
-			p.pos += p.vel * dt;
-		}
-
-		accel(&particles, &mut acc2);
-		for (i, p) in particles.iter_mut().enumerate() {
-			p.vel += acc2[i] * (dt / 2.0);
-		}
-	};
-
-	while t + dt < total_time {
-		step(dt);
-		t += dt;
-	}
-
-	// the final time step may have to be truncated
-	// to fit total_time precisely
-	let final_dt = total_time - t;
-	if final_dt > 0.0 {
-		step(final_dt);
-	}
 }
-
-// fn sqr(x: f64) -> f64 {
-// 	x * x
-// }
-
-// pub fn step(particles: &mut [Particle], acc: &[vec2], dt: f64) {
-// let dt_half = dt / 2.0;
-// let dt_half2 = dt_half * dt_half;
-
-// for (i, p) in particles.iter_mut().enumerate() {
-
-// //p.vel = p.vel + acc[i] * dt;
-// //p.pos = p.pos + p.vel * dt;
-
-// }
-// }
-
-//  pub fn step_adaptive(particles: &mut [Particle], acc: &[vec2], dt: f64) -> f64{
-//  	for (i, p) in particles.iter_mut().enumerate() {
-//  		p.vel = p.vel + acc[i] * dt;
-//  		p.pos = p.pos + p.vel * dt;
-//  	}
-//  }
-//
 
 #[cfg(test)]
 mod test {
 	use super::*;
+	use crate::bruteforce;
 
 	#[test]
 	fn verlet_error() {
