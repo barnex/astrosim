@@ -1,8 +1,10 @@
 extern crate astrosim_lib;
+extern crate image;
 extern crate serde;
 extern crate structopt;
 use astrosim_lib::bruteforce;
 use astrosim_lib::prelude::*;
+use astrosim_lib::render;
 use astrosim_lib::verlet;
 use serde::Deserialize;
 use std::error::Error;
@@ -11,16 +13,16 @@ use structopt::StructOpt;
 #[derive(StructOpt)]
 struct Args {
 	/// Total run time.
-	#[structopt(long, default_value = "1.0")]
-	t: f64,
+	#[structopt(short, long, default_value = "1.0")]
+	pub time: f64,
 
 	/// Verlet integration time step.
-	#[structopt(long, default_value = "0.001")]
+	#[structopt(short, long, default_value = "0.001")]
 	dt: f64,
 
 	/// Number of times to save the output.
-	#[structopt(long, default_value = "100")]
-	outputs: i32,
+	#[structopt(long, default_value = "300")]
+	outputs: u32,
 
 	/// Render this portion of the world.
 	#[structopt(long, default_value = "2.0")]
@@ -28,7 +30,7 @@ struct Args {
 
 	/// Render this number of pixels (for image width and height).
 	#[structopt(long, default_value = "255")]
-	render_pix: u32,
+	render_pixels: u32,
 
 	/// Files to process
 	#[structopt(name = "FILE")]
@@ -40,20 +42,42 @@ fn main() {
 
 	let mut particles = particles_from_args(&args);
 
-	let total_time = args.t;
+	let total_time = args.time;
 	let dt = args.dt;
 	let num_outputs = args.outputs;
-	for _i in 0..num_outputs {
+	for i in 0..num_outputs {
 		verlet::advance(
 			bruteforce::set_accel,
 			&mut particles,
 			total_time / (num_outputs as f64),
 			dt,
 		);
-		//bruteforce::set_accel(&particles, &mut acc);
-		//verlet::step(&mut particles, &acc, args.dt);
 		print_positions(&particles);
+		check(
+			"render",
+			render_positions(&particles, args.render_pixels, args.render_scale, i),
+		)
 	}
+}
+
+fn check<V>(msg: &str, result: Result<V, Err>) {
+	match result {
+		Err(e) => fatal(&format!("{}: {}", msg, e)),
+		Ok(_) => (),
+	}
+}
+
+fn render_positions(particles: &[Particle], pixels: u32, scale: f64, i: u32) -> Result<(), Err> {
+	let path = format!("output/{:06}.png", i);
+
+	let img_data = render::render(particles, pixels, scale);
+	let img = image::ImageBuffer::from_fn(pixels, pixels, |x, y| {
+		let v = img_data[y as usize][x as usize];
+		let v = if v == 0.0 { 0u8 } else { 255u8 };
+		image::Rgba([v, v, v, 255])
+	});
+
+	Ok(img.save(&path)?)
 }
 
 fn print_positions(particles: &[Particle]) {
@@ -81,8 +105,9 @@ fn particles_from_args(args: &Args) -> Particles {
 }
 
 type Particles = Vec<Particle>;
+type Err = Box<dyn Error>;
 
-fn parse_particles_file(fname: &str) -> Result<Particles, Box<dyn Error>> {
+fn parse_particles_file(fname: &str) -> Result<Particles, Err> {
 	#[derive(Debug, Deserialize)]
 	struct Record {
 		pub m: f64,

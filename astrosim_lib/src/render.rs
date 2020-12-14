@@ -1,8 +1,17 @@
 use super::image::Image;
 use super::prelude::*;
 
-pub fn render(particles: &[Particle], pix: u32, scale: f64) -> Image<f32> {
-	let mut img = Image::new(pix, pix);
+pub fn render(particles: &[Particle], npix: u32, scale: f64) -> Image<f32> {
+	let mut img = Image::new(npix, npix);
 
-	for p in particles {}
+	for p in particles {
+		let screen_pos = (p.pos / (2.0 * scale) + vec2(0.5, 0.5)) * (npix as f64) + vec2(0.5, 0.5);
+		let x = screen_pos.x as i32;
+		let y = screen_pos.y as i32;
+		let npix = npix as i32;
+		if x >= 0 && x < npix && y >= 0 && y < npix {
+			img[y as usize][x as usize] += 1.0;
+		}
+	}
+	img
 }
