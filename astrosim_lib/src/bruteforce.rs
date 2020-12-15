@@ -40,10 +40,7 @@ mod test {
 	//
 	#[test]
 	fn pairwise_x() {
-		let p = vec![
-			Particle::new(2.0, vec2(-1.0, 0.0), vec2(0.0, 0.0)),
-			Particle::new(1.0, vec2(1.0, 0.0), vec2(0.0, 0.0)),
-		];
+		let p = vec![Particle::new(2.0, vec2(-1.0, 0.0), vec2(0.0, 0.0)), Particle::new(1.0, vec2(1.0, 0.0), vec2(0.0, 0.0))];
 
 		let acc = accel(&p);
 		assert_eq!(acc[0], vec2(0.25, 0.0));
@@ -56,10 +53,7 @@ mod test {
 	//    *
 	#[test]
 	fn pairwise_y() {
-		let p = vec![
-			Particle::new(2.0, vec2(0.0, -1.0), vec2(0.0, 0.0)),
-			Particle::new(1.0, vec2(0.0, 1.0), vec2(0.0, 0.0)),
-		];
+		let p = vec![Particle::new(2.0, vec2(0.0, -1.0), vec2(0.0, 0.0)), Particle::new(1.0, vec2(0.0, 1.0), vec2(0.0, 0.0))];
 
 		let acc = accel(&p);
 		assert_eq!(acc[0], vec2(0.0, 0.25));

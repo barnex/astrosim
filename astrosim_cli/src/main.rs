@@ -20,6 +20,11 @@ struct Args {
 	#[structopt(short, long, default_value = "0.001")]
 	dt: f64,
 
+	/// Target relative error per oribit.
+	/// TODO: steps per orbit? default 100?
+	#[structopt(short, long, default_value = "0.001")]
+	target_error: f64,
+
 	/// Number of times to save the output.
 	#[structopt(long, default_value = "300")]
 	outputs: u32,
@@ -46,17 +51,9 @@ fn main() {
 	let dt = args.dt;
 	let num_outputs = args.outputs;
 	for i in 0..num_outputs {
-		verlet::advance(
-			bruteforce::set_accel,
-			&mut particles,
-			total_time / (num_outputs as f64),
-			dt,
-		);
-		print_positions(&particles);
-		check(
-			"render",
-			render_positions(&particles, args.render_pixels, args.render_scale, i),
-		)
+		verlet::advance(bruteforce::set_accel, &mut particles, total_time / (num_outputs as f64), dt);
+		//print_positions(&particles);
+		check("render", render_positions(&particles, args.render_pixels, args.render_scale, i))
 	}
 }
 
@@ -113,11 +110,7 @@ fn parse_particles_file(fname: &str) -> Result<Particles, Err> {
 		pub vy: f64,
 	}
 	let mut particles = Vec::new();
-	let mut rdr = csv::ReaderBuilder::new()
-		.trim(csv::Trim::All)
-		.comment(Some(b'#'))
-		.has_headers(false)
-		.from_path(fname)?;
+	let mut rdr = csv::ReaderBuilder::new().trim(csv::Trim::All).comment(Some(b'#')).has_headers(false).from_path(fname)?;
 	for result in rdr.deserialize() {
 		let p: Record = result?;
 		particles.push(Particle::new(p.m, vec2(p.x, p.y), vec2(p.vx, p.vy)));

@@ -37,7 +37,7 @@ where
 // `acc` must contain the accelerations at the beginning of the step,
 // will be overwritten by the accelerations at the end of the step
 // (thus ready for re-use by the next step).
-fn step<F>(accel: F, particles: &mut [Particle], acc: &mut [vec2], dt: f64)
+pub fn step<F>(accel: F, particles: &mut [Particle], acc: &mut [vec2], dt: f64)
 where
 	F: Fn(&[Particle], &mut [vec2]), // acceleration function
 {
@@ -56,12 +56,9 @@ where
 }
 
 // check that total_time and dt are not accidentally swapped
-fn check_dt(total_time: f64, dt: f64) {
+pub fn check_dt(total_time: f64, dt: f64) {
 	if total_time < dt {
-		panic!(
-			"advance: total_time ({}) must be larger than dt ({})",
-			total_time, dt
-		)
+		panic!("advance: total_time ({}) must be larger than dt ({})", total_time, dt)
 	}
 }
 

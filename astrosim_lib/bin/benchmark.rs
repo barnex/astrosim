@@ -22,12 +22,7 @@ fn benchmark(n: usize) {
 	let n = n as f64;
 	let ms = duration.as_secs_f64() * 1000.0;
 	let ns = duration.as_secs_f64() * 1000000.0;
-	println!(
-		"n: {}: {} ms = {} ns/particle",
-		n,
-		ms as f32,
-		(ns / n) as f32
-	);
+	println!("n: {}: {} ms = {} ns/particle", n, ms as f32, (ns / n) as f32);
 }
 
 fn random_particles(n: usize) -> Vec<Particle> {

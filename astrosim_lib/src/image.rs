@@ -64,10 +64,7 @@ where
 	C: Copy + Default,
 {
 	fn default() -> Self {
-		Self {
-			dim: (0, 0),
-			values: Vec::new(),
-		}
+		Self { dim: (0, 0), values: Vec::new() }
 	}
 }
 

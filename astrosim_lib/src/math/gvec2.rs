@@ -61,10 +61,7 @@ where
 
 	#[inline]
 	fn div(self, rhs: T) -> Self::Output {
-		Self {
-			x: self.x / rhs,
-			y: self.y / rhs,
-		}
+		Self { x: self.x / rhs, y: self.y / rhs }
 	}
 }
 
@@ -76,10 +73,7 @@ where
 
 	#[inline]
 	fn mul(self, rhs: T) -> Self::Output {
-		Self {
-			x: self.x * rhs,
-			y: self.y * rhs,
-		}
+		Self { x: self.x * rhs, y: self.y * rhs }
 	}
 }
 
@@ -102,10 +96,7 @@ where
 
 	#[inline]
 	fn neg(self) -> Self::Output {
-		Self {
-			x: -self.x,
-			y: -self.y,
-		}
+		Self { x: -self.x, y: -self.y }
 	}
 }
 

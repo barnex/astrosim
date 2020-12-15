@@ -9,6 +9,10 @@ name = "benchmark"
 path = "bin/benchmark.rs"
 
 [[bin]]
+name = "convergence_verlet_fixed"
+path = "bin/convergence_verlet_fixed.rs"
+
+[[bin]]
 name = "convergence"
 path = "bin/convergence.rs"
 
