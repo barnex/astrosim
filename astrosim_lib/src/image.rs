@@ -1,7 +1,6 @@
 use std::ops::{Index, IndexMut};
 
-/// An Image is a rectangular 2D array of color values
-/// (RGB, grayscale, ...)
+/// 2D rectangular array of generic values.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Image<C> {
 	dim: (usize, usize),
@@ -12,7 +11,7 @@ impl<'a, C> Image<C>
 where
 	C: Copy + Default,
 {
-	/// new constructs an image with given width and height.
+	/// new constructs an Image with given width and height.
 	pub fn new(w: u32, h: u32) -> Image<C> {
 		Image {
 			dim: (w as usize, h as usize),
@@ -113,25 +112,3 @@ impl Image<f32> {
 		raw
 	}
 }
-
-// impl Image<u8> {
-// 	/// Save image to file. E.g.:
-// 	/// 	img.save("file.png")?;
-// 	pub fn save<P: AsRef<Path>>(&self, p: P) -> io::Result<()> {
-// 		let w = self.width() as u32;
-// 		let h = self.height() as u32;
-// 		let img = image::ImageBuffer::from_fn(w, h, |x, y| {
-// 			let c = self[y as usize][x as usize];
-// 			image::Rgb([c, c, c])
-// 		});
-// 		img.save(p)
-// 	}
-//
-// 	/// Convert to BGRA
-// 	pub fn to_bgra(&self) -> Image<BGRA> {
-// 		Image::<BGRA>::from_fn(self.dimensions(), |x, y| {
-// 			let c = self.at((x, y));
-// 			BGRA(c, c, c, 255)
-// 		})
-// 	}
-// }

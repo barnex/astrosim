@@ -40,7 +40,7 @@ struct Args {
 fn main() {
 	let args = Args::from_args();
 
-	let mut particles = particles_from_args(&args);
+	let mut particles = check("parse particles input files", particles_from_args(&args));
 
 	let total_time = args.time;
 	let dt = args.dt;
@@ -60,10 +60,10 @@ fn main() {
 	}
 }
 
-fn check<V>(msg: &str, result: Result<V, Err>) {
+fn check<V>(msg: &str, result: Result<V, Err>) -> V {
 	match result {
 		Err(e) => fatal(&format!("{}: {}", msg, e)),
-		Ok(_) => (),
+		Ok(v) => v,
 	}
 }
 
@@ -89,19 +89,15 @@ fn print_positions(particles: &[Particle]) {
 
 // construct particles list from command line arguments.
 // TODO: concatenate multiple files
-fn particles_from_args(args: &Args) -> Particles {
-	if args.files.len() != 1 {
-		fatal(&format!(
-			"Need one input file (initial positions, velocities, mass), got {} files: {:?}",
-			args.files.len(),
-			&args.files
-		));
+fn particles_from_args(args: &Args) -> Result<Particles, Err> {
+	if args.files.len() == 0 {
+		fatal("Need at least one input file (CSV with mass, positions, velocities)");
 	}
-	let file = &args.files[0];
-	match parse_particles_file(file) {
-		Ok(p) => p,
-		Err(e) => fatal(&format!("parse {}: {}", file, e)),
+	let mut particles = Vec::new();
+	for file in &args.files {
+		particles.append(&mut parse_particles_file(file)?)
 	}
+	Ok(particles)
 }
 
 type Particles = Vec<Particle>;
