@@ -1,0 +1,4 @@
+# a massless particle in a highly eccentric orbit around the sun.
+# m x y vx vy
+1.0,    0.0,0.0,   0.0,0.0
+0.0,    1.0,0.0,   0.0,0.1

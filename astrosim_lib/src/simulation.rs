@@ -3,6 +3,7 @@ use super::prelude::*;
 use std::cell::RefCell;
 use std::fs;
 use std::fs::File;
+use std::io::BufWriter;
 use std::io::Write;
 use std::mem::swap;
 use std::path::{Path, PathBuf};
@@ -18,7 +19,8 @@ pub struct Simulation {
 
 	output_dir: PathBuf,
 	render_every: f64,
-	output_table: Option<RefCell<File>>,
+	timestep_file: Option<RefCell<BufWriter<File>>>,
+	positions_file: Option<RefCell<BufWriter<File>>>,
 }
 
 // Force function, calculates accelartions due to the particle's interaction.
@@ -42,26 +44,41 @@ impl Simulation {
 			force,
 			render_every: 0.0,
 			output_dir: PathBuf::new(),
-			output_table: None,
+			timestep_file: None,
+			positions_file: None,
 		}
 	}
 
 	/// Enable writing periodic output.
-	pub fn with_output(mut self, output_dir: PathBuf, timesteps: bool) -> Result<Self> {
+	pub fn with_output(mut self, output_dir: PathBuf, timesteps: bool, positions: bool) -> Result<Self> {
 		fs::create_dir_all(&output_dir)?;
 		self.output_dir = output_dir;
 
 		if timesteps {
-			let f = self.output_dir.join(Self::TABLE_FILE);
-			let mut f = File::create(&f).msg(&format!("output table: create {}", f.to_string_lossy()))?;
+			let mut f = self.create(Self::TIMESTEPS_FILE)?;
 			writeln!(f, "# time dt error")?;
-			self.output_table = Some(RefCell::new(f));
+			self.timestep_file = Some(RefCell::new(f));
+		}
+
+		if positions {
+			let mut f = self.create(Self::POSITIONS_FILE)?;
+			writeln!(f, "# time position_x position_y ...")?;
+			self.positions_file = Some(RefCell::new(f));
 		}
 
 		Ok(self)
 	}
 
-	const TABLE_FILE: &'static str = "timesteps.txt";
+	const TIMESTEPS_FILE: &'static str = "timesteps.txt";
+	const POSITIONS_FILE: &'static str = "positions.txt";
+
+	// Create a file in the output directory.
+	fn create(&self, basename: &str) -> Result<BufWriter<File>> {
+		let name = self.output_dir.join(basename);
+		let f = File::create(&name).msg(&format!("create {}", name.to_string_lossy()))?;
+		let buf = BufWriter::new(f);
+		Ok(buf)
+	}
 
 	pub fn with_render_every(mut self, dt: f64) -> Self {
 		self.render_every = dt;
@@ -73,6 +90,7 @@ impl Simulation {
 	}
 
 	// Advance time by exactly total_time.
+	// Write output files if configured so.
 	pub fn advance(&mut self, total_time: f64) -> Result<()> {
 		// Output initial state
 		self.do_output()?;
@@ -81,13 +99,13 @@ impl Simulation {
 		// then take one last step, truncated to fit total_time exactly.
 		let end_time = self.time + total_time;
 		while self.time + self.dt < end_time {
-			self.step(self.dt);
+			self.step_no_output(self.dt);
 			self.do_output()?;
 			self.update_dt();
 		}
 		let final_dt = end_time - self.time;
 		if final_dt > 0.0 {
-			self.step(final_dt);
+			self.step_no_output(final_dt);
 			self.do_output()?;
 			// truncated time step is not representative,
 			// don't update dt based on it.
@@ -98,7 +116,9 @@ impl Simulation {
 	// Take a single time step of size `dt`.
 	// Acceleration must be up-to-date before step,
 	// will be up-to-date after step (ready for next use).
-	fn step(&mut self, dt: f64) {
+	//
+	// Does not write output files.
+	fn step_no_output(&mut self, dt: f64) {
 		// https://en.wikipedia.org/wiki/Leapfrog_integration#Algorithm, "synchronized" form.
 
 		// "drift" the positions with previous velocities and acceleration.
@@ -130,15 +150,35 @@ impl Simulation {
 		self.acc1
 			.iter()
 			.zip(self.acc2.iter())
-			.map(|(a1, a2)| (*a1 - *a2).len2() / (0.25 * (*a1 + *a2).len2()))
+			.map(|(a1, a2)| (*a1 - *a2).len2() / (*a1 + *a2).len2())
 			.fold(0.0, |max, val| f64::max(max, val))
-			.sqrt()
+			.sqrt() * 2.0
 	}
 
 	fn do_output(&self) -> Result<()> {
-		if let Some(cell) = self.output_table.as_ref() {
+		self.output_timesteps()?;
+		self.output_positions()?;
+		Ok(())
+	}
+
+	fn output_positions(&self) -> Result<()> {
+		if let Some(cell) = self.positions_file.as_ref() {
 			let mut w = cell.borrow_mut();
-			writeln!(w, "{}\t{}\t{}", self.time, self.dt, self.relative_error())?
+			write!(w, "{}", self.time)?;
+			for p in self.particles() {
+				write!(w, " {} {}", p.pos.x, p.pos.y)?;
+			}
+			writeln!(w)?;
+			w.flush()?;
+		}
+		Ok(())
+	}
+
+	fn output_timesteps(&self) -> Result<()> {
+		if let Some(cell) = self.timestep_file.as_ref() {
+			let mut w = cell.borrow_mut();
+			writeln!(w, "{}\t{}\t{}", self.time, self.dt, self.relative_error())?;
+			w.flush()?;
 		}
 		Ok(())
 	}

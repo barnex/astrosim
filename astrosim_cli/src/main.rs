@@ -37,7 +37,11 @@ struct Args {
 
 	/// Enable writing timestep information to output_dir/timesteps.txt.
 	#[structopt(long)]
-	output_timesteps: bool,
+	timesteps: bool,
+
+	/// Enable writing particle positions to output_dir/positions.txt.
+	#[structopt(long)]
+	positions: bool,
 
 	/// Manually specify output directory.
 	#[structopt(long, short)]
@@ -68,11 +72,13 @@ fn main_checked() -> Result<()> {
 
 	println!("input files:   {}", &args.files.join(","));
 	println!("particles:     {}", particles.len());
+	println!("run time:      {}", args.time);
 	println!("output dir:    {}", &output_dir.to_string_lossy());
-	println!("timesteps.txt: {}", args.output_timesteps);
+	println!("timesteps.txt: {}", args.timesteps);
+	println!("positions.txt: {}", args.positions);
 
 	let mut sim = Simulation::new(particles, args.dt) //
-		.with_output(output_dir, args.output_timesteps)?;
+		.with_output(output_dir, args.timesteps, args.positions)?;
 
 	sim.advance(args.time)?;
 
