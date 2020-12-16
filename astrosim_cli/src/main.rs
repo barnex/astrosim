@@ -7,7 +7,6 @@ use astrosim_lib::prelude::*;
 use astrosim_lib::render;
 use astrosim_lib::verlet;
 use serde::Deserialize;
-use std::error::Error;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -22,7 +21,7 @@ struct Args {
 
 	/// Target relative error per oribit.
 	/// TODO: steps per orbit? default 100?
-	#[structopt(short, long, default_value = "0.001")]
+	#[structopt(long, default_value = "0.001")]
 	target_error: f64,
 
 	/// Number of times to save the output.
@@ -37,34 +36,30 @@ struct Args {
 	#[structopt(long, default_value = "255")]
 	render_pixels: u32,
 
+	/// Table output file for time stepping statistics.
+	#[structopt(long)]
+	table: Option<String>,
+
 	/// Files to process
 	#[structopt(name = "FILE")]
 	files: Vec<String>,
 }
 
 fn main() {
+	if let Err(e) = main_checked() {
+		eprintln!("{}", e);
+		std::process::exit(1);
+	}
+}
+
+fn main_checked() -> Result<()> {
 	let args = Args::from_args();
-
-	let mut particles = check("parse particles input files", particles_from_args(&args));
-
-	let total_time = args.time;
-	let dt = args.dt;
-	let num_outputs = args.outputs;
-	for i in 0..num_outputs {
-		verlet::advance(bruteforce::set_accel, &mut particles, total_time / (num_outputs as f64), dt);
-		//print_positions(&particles);
-		check("render", render_positions(&particles, args.render_pixels, args.render_scale, i))
-	}
+	let particles = particles_from_args(&args)?;
+	let mut sim = Simulation::new(particles, args.dt).with_table_output(args.table.as_ref())?;
+	sim.advance(args.time)
 }
 
-fn check<V>(msg: &str, result: Result<V, Err>) -> V {
-	match result {
-		Err(e) => fatal(&format!("{}: {}", msg, e)),
-		Ok(v) => v,
-	}
-}
-
-fn render_positions(particles: &[Particle], pixels: u32, scale: f64, i: u32) -> Result<(), Err> {
+fn render_positions(particles: &[Particle], pixels: u32, scale: f64, i: u32) -> Result<()> {
 	let path = format!("output/{:06}.png", i);
 
 	let img_data = render::render(particles, pixels, scale);
@@ -86,7 +81,7 @@ fn print_positions(particles: &[Particle]) {
 
 // construct particles list from command line arguments.
 // TODO: concatenate multiple files
-fn particles_from_args(args: &Args) -> Result<Particles, Err> {
+fn particles_from_args(args: &Args) -> Result<Vec<Particle>> {
 	if args.files.len() == 0 {
 		fatal("Need at least one input file (CSV with mass, positions, velocities)");
 	}
@@ -97,10 +92,7 @@ fn particles_from_args(args: &Args) -> Result<Particles, Err> {
 	Ok(particles)
 }
 
-type Particles = Vec<Particle>;
-type Err = Box<dyn Error>;
-
-fn parse_particles_file(fname: &str) -> Result<Particles, Err> {
+fn parse_particles_file(fname: &str) -> Result<Vec<Particle>> {
 	#[derive(Debug, Deserialize)]
 	struct Record {
 		pub m: f64,

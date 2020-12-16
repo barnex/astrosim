@@ -1,14 +1,20 @@
 use super::bruteforce;
 use super::prelude::*;
+use std::cell::RefCell;
+use std::error::Error;
+use std::fs::File;
+use std::io::Write;
 use std::mem::swap;
 
 pub struct Simulation {
 	particles: Vec<Particle>,
+	step: u64,
 	time: f64,
 	dt: f64,
 	force: ForceFn,
 	acc1: Vec<vec2>,
 	acc2: Vec<vec2>,
+	output_table: Option<RefCell<File>>,
 }
 
 // Force function, calculates accelartions due to the particle's interaction.
@@ -26,10 +32,24 @@ impl Simulation {
 			acc2: acc1.clone(),
 			acc1,
 			particles,
+			step: 0,
 			time: 0.0,
 			dt,
 			force,
+			output_table: None,
 		}
+	}
+
+	pub fn with_table_output<P: AsRef<std::path::Path>>(self, fname: Option<P>) -> Result<Self> {
+		let output_table = match fname {
+			None => None,
+			Some(fname) => {
+				let mut f = File::create(fname)?;
+				writeln!(f, "# time dt error")?;
+				Some(RefCell::new(f))
+			}
+		};
+		Ok(Self { output_table, ..self })
 	}
 
 	pub fn particles(&self) -> &[Particle] {
@@ -37,20 +57,26 @@ impl Simulation {
 	}
 
 	// Advance time by exactly total_time.
-	pub fn advance(&mut self, total_time: f64) {
+	pub fn advance(&mut self, total_time: f64) -> Result<()> {
+		// Output initial state
+		self.do_output()?;
+
 		// Take normal time steps until just before the end time,
 		// then take one last step, truncated to fit total_time exactly.
 		let end_time = self.time + total_time;
 		while self.time + self.dt < end_time {
 			self.step(self.dt);
+			self.do_output()?;
 			self.update_dt();
 		}
 		let final_dt = end_time - self.time;
 		if final_dt > 0.0 {
 			self.step(final_dt);
+			self.do_output()?;
 			// truncated time step is not representative,
 			// don't update dt based on it.
 		}
+		Ok(())
 	}
 
 	// Take a single time step of size `dt`.
@@ -76,7 +102,8 @@ impl Simulation {
 		}
 		// swap so that acc1 holds the acceleration for the next time step.
 		swap(&mut self.acc1, &mut self.acc2);
-		self.time += dt
+		self.time += dt;
+		self.step += 1;
 	}
 
 	fn update_dt(&mut self) {
@@ -88,8 +115,16 @@ impl Simulation {
 			.iter()
 			.zip(self.acc2.iter())
 			.map(|(a1, a2)| (*a1 - *a2).len2() / (0.25 * (*a1 + *a2).len2()))
-			.fold(0.0, |m, v| f64::max(m, v))
+			.fold(0.0, |max, val| f64::max(max, val))
 			.sqrt()
+	}
+
+	fn do_output(&self) -> Result<()> {
+		if let Some(cell) = self.output_table.as_ref() {
+			let mut w = cell.borrow_mut();
+			writeln!(w, "{}\t{}\t{}", self.time, self.dt, self.relative_error())?
+		}
+		Ok(())
 	}
 }
 
