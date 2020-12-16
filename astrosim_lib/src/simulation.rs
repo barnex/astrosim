@@ -13,6 +13,7 @@ pub struct Simulation {
 	step: u64,
 	time: f64,
 	dt: f64,
+	target_error: f64,
 	force: ForceFn,
 	acc1: Vec<vec2>,
 	acc2: Vec<vec2>,
@@ -41,6 +42,7 @@ impl Simulation {
 			step: 0,
 			time: 0.0,
 			dt,
+			target_error: 0.001, //TODO
 			force,
 			render_every: 0.0,
 			output_dir: PathBuf::new(),
@@ -143,7 +145,15 @@ impl Simulation {
 	}
 
 	fn update_dt(&mut self) {
-		//let adjust =
+		// works but test must be updated
+		// let mut adjust = self.target_error / self.relative_error();
+		// if adjust > 1.4 {
+		// 	adjust = 1.4;
+		// }
+		// if adjust < 0.1 {
+		// 	adjust = 0.1;
+		// }
+		// self.dt *= adjust;
 	}
 
 	fn relative_error(&self) -> f64 {
