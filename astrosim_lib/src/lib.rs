@@ -1,6 +1,7 @@
 pub mod adaptive;
 pub mod bruteforce;
 pub mod error;
+pub mod errormessage;
 pub mod image;
 pub mod math;
 pub mod particle;

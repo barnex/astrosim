@@ -1,4 +1,5 @@
 pub use super::error::*;
+pub use super::errormessage::*;
 pub use super::math::*;
 pub use super::particle::*;
 pub use super::result::*;

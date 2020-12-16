@@ -1,10 +1,11 @@
 use super::bruteforce;
 use super::prelude::*;
 use std::cell::RefCell;
-use std::error::Error;
+use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::mem::swap;
+use std::path::{Path, PathBuf};
 
 pub struct Simulation {
 	particles: Vec<Particle>,
@@ -14,6 +15,9 @@ pub struct Simulation {
 	force: ForceFn,
 	acc1: Vec<vec2>,
 	acc2: Vec<vec2>,
+
+	output_dir: PathBuf,
+	render_every: f64,
 	output_table: Option<RefCell<File>>,
 }
 
@@ -36,20 +40,32 @@ impl Simulation {
 			time: 0.0,
 			dt,
 			force,
+			render_every: 0.0,
+			output_dir: PathBuf::new(),
 			output_table: None,
 		}
 	}
 
-	pub fn with_table_output<P: AsRef<std::path::Path>>(self, fname: Option<P>) -> Result<Self> {
-		let output_table = match fname {
-			None => None,
-			Some(fname) => {
-				let mut f = File::create(fname)?;
-				writeln!(f, "# time dt error")?;
-				Some(RefCell::new(f))
-			}
-		};
-		Ok(Self { output_table, ..self })
+	/// Enable writing periodic output.
+	pub fn with_output(mut self, output_dir: PathBuf, timesteps: bool) -> Result<Self> {
+		fs::create_dir_all(&output_dir)?;
+		self.output_dir = output_dir;
+
+		if timesteps {
+			let f = self.output_dir.join(Self::TABLE_FILE);
+			let mut f = File::create(&f).msg(&format!("output table: create {}", f.to_string_lossy()))?;
+			writeln!(f, "# time dt error")?;
+			self.output_table = Some(RefCell::new(f));
+		}
+
+		Ok(self)
+	}
+
+	const TABLE_FILE: &'static str = "timesteps.txt";
+
+	pub fn with_render_every(mut self, dt: f64) -> Self {
+		self.render_every = dt;
+		self
 	}
 
 	pub fn particles(&self) -> &[Particle] {

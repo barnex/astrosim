@@ -2,11 +2,10 @@ extern crate astrosim_lib;
 extern crate image;
 extern crate serde;
 extern crate structopt;
-use astrosim_lib::bruteforce;
 use astrosim_lib::prelude::*;
 use astrosim_lib::render;
-use astrosim_lib::verlet;
 use serde::Deserialize;
+use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -36,9 +35,13 @@ struct Args {
 	#[structopt(long, default_value = "255")]
 	render_pixels: u32,
 
-	/// Table output file for time stepping statistics.
+	/// Enable writing timestep information to output_dir/timesteps.txt.
 	#[structopt(long)]
-	table: Option<String>,
+	output_timesteps: bool,
+
+	/// Manually specify output directory.
+	#[structopt(long, short)]
+	output_dir: Option<String>,
 
 	/// Files to process
 	#[structopt(name = "FILE")]
@@ -47,16 +50,33 @@ struct Args {
 
 fn main() {
 	if let Err(e) = main_checked() {
-		eprintln!("{}", e);
+		eprintln!("Error: {}", e);
 		std::process::exit(1);
 	}
 }
 
 fn main_checked() -> Result<()> {
 	let args = Args::from_args();
-	let particles = particles_from_args(&args)?;
-	let mut sim = Simulation::new(particles, args.dt).with_table_output(args.table.as_ref())?;
-	sim.advance(args.time)
+
+	let particles = load_particle_files(&args.files)?;
+	//let render_every = args.time / (args.outputs as f64);
+	let output_dir = if let Some(dir) = args.output_dir {
+		PathBuf::from(dir)
+	} else {
+		PathBuf::from(&args.files[0]).with_extension("out")
+	};
+
+	println!("input files:   {}", &args.files.join(","));
+	println!("particles:     {}", particles.len());
+	println!("output dir:    {}", &output_dir.to_string_lossy());
+	println!("timesteps.txt: {}", args.output_timesteps);
+
+	let mut sim = Simulation::new(particles, args.dt) //
+		.with_output(output_dir, args.output_timesteps)?;
+
+	sim.advance(args.time)?;
+
+	Ok(())
 }
 
 fn render_positions(particles: &[Particle], pixels: u32, scale: f64, i: u32) -> Result<()> {
@@ -79,20 +99,26 @@ fn print_positions(particles: &[Particle]) {
 	println!("");
 }
 
-// construct particles list from command line arguments.
-// TODO: concatenate multiple files
-fn particles_from_args(args: &Args) -> Result<Vec<Particle>> {
-	if args.files.len() == 0 {
-		fatal("Need at least one input file (CSV with mass, positions, velocities)");
+// Load particles from one or more CSV files.
+// Particles from multiple files are concatenated.
+// Zero files is an error.
+fn load_particle_files(files: &[String]) -> Result<Vec<Particle>> {
+	if files.len() == 0 {
+		return err("need at least one input file (CSV with mass, positions, velocities)");
 	}
 	let mut particles = Vec::new();
-	for file in &args.files {
-		particles.append(&mut parse_particles_file(file)?)
+	for file in files {
+		particles.append(&mut load_particle_file(file)?)
 	}
 	Ok(particles)
 }
 
-fn parse_particles_file(fname: &str) -> Result<Vec<Particle>> {
+// Load particles from a CSV file with columns:
+//
+// 	mass, position_x, position_y, velocity_x, velocity_y
+//
+// Comment character is `#`.
+fn load_particle_file(fname: &str) -> Result<Vec<Particle>> {
 	#[derive(Debug, Deserialize)]
 	struct Record {
 		pub m: f64,
@@ -102,15 +128,16 @@ fn parse_particles_file(fname: &str) -> Result<Vec<Particle>> {
 		pub vy: f64,
 	}
 	let mut particles = Vec::new();
-	let mut rdr = csv::ReaderBuilder::new().trim(csv::Trim::All).comment(Some(b'#')).has_headers(false).from_path(fname)?;
+	let msg = format!("load particles: {}", fname);
+	let mut rdr = csv::ReaderBuilder::new() //
+		.trim(csv::Trim::All)
+		.comment(Some(b'#'))
+		.has_headers(false)
+		.from_path(fname)
+		.msg(&msg)?;
 	for result in rdr.deserialize() {
-		let p: Record = result?;
+		let p: Record = result.msg(&msg)?;
 		particles.push(Particle::new(p.m, vec2(p.x, p.y), vec2(p.vx, p.vy)));
 	}
 	Ok(particles)
-}
-
-fn fatal(msg: &str) -> ! {
-	eprintln!("{}", msg);
-	std::process::exit(1);
 }
