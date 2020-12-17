@@ -43,11 +43,6 @@ impl Simulation {
 		}
 	}
 
-	/// Enable writing periodic output.
-	pub fn with_output(self, output_dir: PathBuf, timesteps: bool, positions_every: u32) -> Result<SimWithOutput> {
-		SimWithOutput::new(self, output_dir, timesteps, positions_every)
-	}
-
 	pub fn particles(&self) -> &[Particle] {
 		&self.particles
 	}
@@ -74,12 +69,16 @@ impl Simulation {
 	/// Intended for tests.
 	pub fn advance(&mut self, total_time: f64) {
 		// advance with no-op, no-error output function.
-		self.advance_with_output(total_time, |_| Ok(())).unwrap()
+		self.advance_with_callback(total_time, |_| Ok(())).unwrap()
+	}
+
+	pub fn advance_with_output(&mut self, total_time: f64, outputs: &mut Outputs) -> Result<()> {
+		self.advance_with_callback(total_time, |s| outputs.do_output(s))
 	}
 
 	/// Advance time by exactly total_time.
 	/// Calls outfn(self) on each step, which may save output.
-	pub fn advance_with_output<F: Fn(&Self) -> Result<()>>(&mut self, total_time: f64, outfn: F) -> Result<()> {
+	fn advance_with_callback<F: Fn(&Self) -> Result<()>>(&mut self, total_time: f64, outfn: F) -> Result<()> {
 		// Output initial state
 		//self.do_output()?;
 		outfn(&self)?;

@@ -19,11 +19,11 @@ struct Args {
 	initial_dt: f64,
 
 	/// Maximum integration time step.
-	#[structopt(short, long, default_value = "9e99")]
+	#[structopt(long, default_value = "9e99")]
 	max_dt: f64,
 
 	/// Minimum integration time step.
-	#[structopt(short, long, default_value = "1e-7")]
+	#[structopt(long, default_value = "1e-7")]
 	min_dt: f64,
 
 	/// Target relative error per oribit.
@@ -48,7 +48,7 @@ struct Args {
 	timesteps: bool,
 
 	/// Write particle positions to output_dir/positions.txt every N time steps.
-	#[structopt(long, short)]
+	#[structopt(long, short, default_value = "0")]
 	positions_every: u32,
 
 	/// Manually specify output directory.
@@ -86,8 +86,8 @@ fn main_checked() -> Result<()> {
 	sim.max_dt = args.max_dt;
 	sim.target_error = args.target_error;
 
-	let mut sim = sim.with_output(output_dir, args.timesteps, args.positions_every)?;
-	sim.advance(args.time)?;
+	let mut outputs = Outputs::new(output_dir, args.timesteps, args.positions_every)?;
+	sim.advance_with_output(args.time, &mut outputs)?;
 
 	Ok(())
 }
