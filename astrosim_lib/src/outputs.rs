@@ -45,19 +45,25 @@ impl Outputs {
 		})
 	}
 
-	// Create a file in the output directory.
-	fn create(output_dir: &Path, basename: &str) -> Result<BufWriter<File>> {
-		let name = output_dir.join(basename);
-		let f = File::create(&name).msg(&format!("create {}", name.to_string_lossy()))?;
-		let buf = BufWriter::new(f);
-		Ok(buf)
-	}
-
 	pub fn do_output(&mut self, sim: &Simulation) -> Result<()> {
 		self.output_timesteps(sim)?;
 		self.output_positions(sim)?;
+		//self.render_positions(sim)?;
 		Ok(())
 	}
+
+	//fn render_positions(&mut self, particles: &[Particle], pixels: u32, scale: f64, i: u32) -> Result<()> {
+	//	let path = format!("output/{:06}.png", i);
+
+	//	let img_data = render::render(particles, pixels, scale);
+	//	let img = image::ImageBuffer::from_fn(pixels, pixels, |x, y| {
+	//		let v = img_data[y as usize][x as usize];
+	//		let v = if v == 0.0 { 0u8 } else { 255u8 };
+	//		image::Rgba([v, v, v, 255])
+	//	});
+
+	//	Ok(img.save(&path)?)
+	//}
 
 	fn output_positions(&mut self, sim: &Simulation) -> Result<()> {
 		if self.positions_every != 0 && sim.step_count() % (self.positions_every as u64) == 0 {
@@ -79,5 +85,13 @@ impl Outputs {
 			w.flush()?;
 		}
 		Ok(())
+	}
+
+	// Create a file in the output directory.
+	fn create(output_dir: &Path, basename: &str) -> Result<BufWriter<File>> {
+		let name = output_dir.join(basename);
+		let f = File::create(&name).msg(&format!("create {}", name.to_string_lossy()))?;
+		let buf = BufWriter::new(f);
+		Ok(buf)
 	}
 }

@@ -92,19 +92,6 @@ fn main_checked() -> Result<()> {
 	Ok(())
 }
 
-fn render_positions(particles: &[Particle], pixels: u32, scale: f64, i: u32) -> Result<()> {
-	let path = format!("output/{:06}.png", i);
-
-	let img_data = render::render(particles, pixels, scale);
-	let img = image::ImageBuffer::from_fn(pixels, pixels, |x, y| {
-		let v = img_data[y as usize][x as usize];
-		let v = if v == 0.0 { 0u8 } else { 255u8 };
-		image::Rgba([v, v, v, 255])
-	});
-
-	Ok(img.save(&path)?)
-}
-
 // output directory: first input file, but with extension ".out",
 // unless explicitly overridden by flag --output-dir.
 fn output_dir(args: &Args) -> PathBuf {
