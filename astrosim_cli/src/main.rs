@@ -11,7 +11,7 @@ use structopt::StructOpt;
 #[derive(StructOpt)]
 struct Args {
 	/// Total run time.
-	#[structopt(short, long, default_value = "1.0")]
+	#[structopt(short, long, default_value = "6.28318530717959")]
 	pub time: f64,
 
 	/// Verlet integration time step.
@@ -39,9 +39,9 @@ struct Args {
 	#[structopt(long)]
 	timesteps: bool,
 
-	/// Enable writing particle positions to output_dir/positions.txt.
-	#[structopt(long)]
-	positions: bool,
+	/// Write particle positions to output_dir/positions.txt every N time steps.
+	#[structopt(long, short)]
+	positions_every: u32,
 
 	/// Manually specify output directory.
 	#[structopt(long, short)]
@@ -70,17 +70,17 @@ fn main_checked() -> Result<()> {
 		PathBuf::from(&args.files[0]).with_extension("out")
 	};
 
-	println!("input files:   {}", &args.files.join(","));
-	println!("particles:     {}", particles.len());
-	println!("run time:      {}", args.time);
-	println!("output dir:    {}", &output_dir.to_string_lossy());
-	println!("timesteps.txt: {}", args.timesteps);
-	println!("positions.txt: {}", args.positions);
+	println!("input files:     {}", &args.files.join(","));
+	println!("particles:       {}", particles.len());
+	println!("run time:        {}", args.time);
+	println!("output dir:      {}", &output_dir.to_string_lossy());
+	println!("positions every: {}th time step", args.positions_every);
+	println!("output timesteps:{}", args.timesteps);
 
 	let mut sim = Simulation::new(particles, args.dt) //
-		.with_output(output_dir, args.timesteps, args.positions)?;
+		.with_output(output_dir, args.timesteps, args.positions_every)?;
 
-	sim.advance(args.time)?;
+	sim.advance_with_output(args.time)?;
 
 	Ok(())
 }
