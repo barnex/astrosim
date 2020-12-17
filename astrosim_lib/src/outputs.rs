@@ -61,7 +61,7 @@ impl Outputs {
 	}
 
 	fn output_positions(&self, sim: &Simulation) -> Result<()> {
-		if self.positions_every != 0 && sim.step() % (self.positions_every as u64) == 0 {
+		if self.positions_every != 0 && sim.step_count() % (self.positions_every as u64) == 0 {
 			if let Some(cell) = self.positions_file.as_ref() {
 				let mut w = cell.borrow_mut();
 				write!(w, "{}", sim.time())?;

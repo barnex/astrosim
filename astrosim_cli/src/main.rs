@@ -5,7 +5,7 @@ extern crate structopt;
 use astrosim_lib::prelude::*;
 use astrosim_lib::render;
 use serde::Deserialize;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -14,13 +14,21 @@ struct Args {
 	#[structopt(short, long, default_value = "6.28318530717959")]
 	pub time: f64,
 
-	/// Verlet integration time step.
-	#[structopt(short, long, default_value = "0.001")]
-	dt: f64,
+	/// Initial integration time step.
+	#[structopt(short, long, default_value = "1e-5")]
+	initial_dt: f64,
+
+	/// Maximum integration time step.
+	#[structopt(short, long, default_value = "9e99")]
+	max_dt: f64,
+
+	/// Minimum integration time step.
+	#[structopt(short, long, default_value = "1e-7")]
+	min_dt: f64,
 
 	/// Target relative error per oribit.
 	/// TODO: steps per orbit? default 100?
-	#[structopt(long, default_value = "0.001")]
+	#[structopt(long, default_value = "1e-3")]
 	target_error: f64,
 
 	/// Number of times to save the output.
@@ -63,12 +71,7 @@ fn main_checked() -> Result<()> {
 	let args = Args::from_args();
 
 	let particles = load_particle_files(&args.files)?;
-	//let render_every = args.time / (args.outputs as f64);
-	let output_dir = if let Some(dir) = args.output_dir {
-		PathBuf::from(dir)
-	} else {
-		PathBuf::from(&args.files[0]).with_extension("out")
-	};
+	let output_dir = output_dir(&args);
 
 	println!("input files:     {}", &args.files.join(","));
 	println!("particles:       {}", particles.len());
@@ -77,9 +80,13 @@ fn main_checked() -> Result<()> {
 	println!("positions every: {}th time step", args.positions_every);
 	println!("output timesteps:{}", args.timesteps);
 
-	let mut sim = Simulation::new(particles, args.dt) //
-		.with_output(output_dir, args.timesteps, args.positions_every)?;
+	let mut sim = Simulation::new(particles);
+	sim.dt = args.initial_dt;
+	sim.min_dt = args.min_dt;
+	sim.max_dt = args.max_dt;
+	sim.target_error = args.target_error;
 
+	let mut sim = sim.with_output(output_dir, args.timesteps, args.positions_every)?;
 	sim.advance(args.time)?;
 
 	Ok(())
@@ -98,11 +105,14 @@ fn render_positions(particles: &[Particle], pixels: u32, scale: f64, i: u32) -> 
 	Ok(img.save(&path)?)
 }
 
-fn print_positions(particles: &[Particle]) {
-	for p in particles {
-		print!("{} {} ", p.pos.x, p.pos.y);
+// output directory: first input file, but with extension ".out",
+// unless explicitly overridden by flag --output-dir.
+fn output_dir(args: &Args) -> PathBuf {
+	if let Some(dir) = &args.output_dir {
+		PathBuf::from(dir)
+	} else {
+		PathBuf::from(&args.files[0]).with_extension("out")
 	}
-	println!("");
 }
 
 // Load particles from one or more CSV files.

@@ -5,10 +5,14 @@ use std::path::PathBuf;
 
 pub struct Simulation {
 	particles: Vec<Particle>,
-	step: u64,
+	pub target_error: f64,
+	pub min_dt: f64,
+	pub max_dt: f64,
+
+	step_count: u64,
 	time: f64,
-	dt: f64,
-	target_error: f64,
+	pub dt: f64,
+
 	force: ForceFn,
 	acc1: Vec<vec2>,
 	acc2: Vec<vec2>,
@@ -18,7 +22,7 @@ pub struct Simulation {
 pub type ForceFn = Box<dyn Fn(&[Particle], &mut [vec2])>;
 
 impl Simulation {
-	pub fn new(particles: Vec<Particle>, dt: f64) -> Self {
+	pub fn new(particles: Vec<Particle>) -> Self {
 		// Set-up the initial accelartion once,
 		// assumed initialized by step().
 		let force = Box::new(bruteforce::set_accel);
@@ -29,10 +33,12 @@ impl Simulation {
 			acc2: acc1.clone(),
 			acc1,
 			particles,
-			step: 0,
+			step_count: 0,
 			time: 0.0,
-			dt,
+			dt: 1e-5,            // small initial time step, grows as needed, TODO
 			target_error: 0.001, //TODO
+			min_dt: 0.0,
+			max_dt: INF,
 			force,
 		}
 	}
@@ -54,8 +60,14 @@ impl Simulation {
 		self.dt
 	}
 
-	pub fn step(&self) -> u64 {
-		self.step
+	pub fn fix_dt(&mut self, dt: f64) {
+		self.dt = dt;
+		self.min_dt = dt;
+		self.max_dt = dt;
+	}
+
+	pub fn step_count(&self) -> u64 {
+		self.step_count
 	}
 
 	/// Advance time by exactly total_time, without writing any output.
@@ -76,18 +88,16 @@ impl Simulation {
 		// then take one last step, truncated to fit total_time exactly.
 		let end_time = self.time + total_time;
 		while self.time + self.dt < end_time {
-			self.step_no_output(self.dt);
-			//	self.do_output()?;
+			self.step(self.dt);
 			outfn(&self)?;
-			self.update_dt();
+			self.adjust_dt();
 		}
 		let final_dt = end_time - self.time;
 		if final_dt > 0.0 {
-			self.step_no_output(final_dt);
-			//	self.do_output()?;
+			self.step(final_dt);
 			outfn(&self)?;
 			// truncated time step is not representative,
-			// don't update dt based on it.
+			// don't adjust dt based on it.
 		}
 		Ok(())
 	}
@@ -97,7 +107,7 @@ impl Simulation {
 	// will be up-to-date after step (ready for next use).
 	//
 	// Does not write output files.
-	fn step_no_output(&mut self, dt: f64) {
+	fn step(&mut self, dt: f64) {
 		// https://en.wikipedia.org/wiki/Leapfrog_integration#Algorithm, "synchronized" form.
 
 		// "drift" the positions with previous velocities and acceleration.
@@ -118,19 +128,17 @@ impl Simulation {
 		// swap so that acc1 holds the acceleration for the next time step.
 		swap(&mut self.acc1, &mut self.acc2);
 		self.time += dt;
-		self.step += 1;
+		self.step_count += 1;
 	}
 
-	fn update_dt(&mut self) {
-		// works but test must be updated
+	//
+	fn adjust_dt(&mut self) {
 		let mut adjust = self.target_error / self.relative_error();
-		if adjust > 1.4 {
-			adjust = 1.4;
-		}
-		if adjust < 0.1 {
-			adjust = 0.1;
-		}
+		adjust = f64::min(adjust, 1.4);
+		adjust = f64::max(adjust, 0.1);
 		self.dt *= adjust;
+		self.dt = f64::max(self.dt, self.min_dt);
+		self.dt = f64::min(self.dt, self.max_dt);
 	}
 
 	pub fn relative_error(&self) -> f64 {
@@ -139,7 +147,7 @@ impl Simulation {
 			.zip(self.acc2.iter())
 			.map(|(a1, a2)| (*a1 - *a2).len2() / (*a1 + *a2).len2())
 			.fold(0.0, |max, val| f64::max(max, val))
-			.sqrt() * 2.0
+			.sqrt() * 0.5
 	}
 }
 
@@ -155,7 +163,8 @@ mod test {
 				Particle::new(1.0, vec2(0.0, 0.0), vec2(0.0, 0.0)), // "sun"
 				Particle::new(0.0, vec2(0.0, 1.0), vec2(1.0, 0.0)), // "earth"
 			];
-			let mut sim = Simulation::new(particles, dt);
+			let mut sim = Simulation::new(particles);
+			sim.fix_dt(dt);
 			sim.advance(PI / 2.0);
 			let got = sim.particles()[1].pos;
 			let want = vec2(1.0, 0.0); // travelled a quarter orbit

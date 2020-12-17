@@ -7,3 +7,5 @@ pub use super::sim_with_output::*;
 pub use super::simulation::*;
 
 pub use std::f64::consts::PI;
+
+pub const INF: f64 = f64::INFINITY;
