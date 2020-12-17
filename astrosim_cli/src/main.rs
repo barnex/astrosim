@@ -80,7 +80,7 @@ fn main_checked() -> Result<()> {
 	let mut sim = Simulation::new(particles, args.dt) //
 		.with_output(output_dir, args.timesteps, args.positions_every)?;
 
-	sim.advance_with_output(args.time)?;
+	sim.advance(args.time)?;
 
 	Ok(())
 }

@@ -1,12 +1,7 @@
 use super::bruteforce;
 use super::prelude::*;
-use std::cell::RefCell;
-use std::fs;
-use std::fs::File;
-use std::io::BufWriter;
-use std::io::Write;
 use std::mem::swap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub struct Simulation {
 	particles: Vec<Particle>,
@@ -17,12 +12,6 @@ pub struct Simulation {
 	force: ForceFn,
 	acc1: Vec<vec2>,
 	acc2: Vec<vec2>,
-
-	output_dir: PathBuf,
-	render_every: f64,
-	positions_every: u32,
-	timestep_file: Option<RefCell<BufWriter<File>>>,
-	positions_file: Option<RefCell<BufWriter<File>>>,
 }
 
 // Force function, calculates accelartions due to the particle's interaction.
@@ -45,71 +34,40 @@ impl Simulation {
 			dt,
 			target_error: 0.001, //TODO
 			force,
-			render_every: 0.0,
-			positions_every: 0,
-			output_dir: PathBuf::new(),
-			timestep_file: None,
-			positions_file: None,
 		}
 	}
 
 	/// Enable writing periodic output.
-	pub fn with_output(mut self, output_dir: PathBuf, timesteps: bool, positions_every: u32) -> Result<Self> {
-		fs::create_dir_all(&output_dir)?;
-		self.output_dir = output_dir;
-
-		if timesteps {
-			let mut f = self.create(Self::TIMESTEPS_FILE)?;
-			writeln!(f, "# time dt error")?;
-			self.timestep_file = Some(RefCell::new(f));
-		}
-
-		self.positions_every = positions_every;
-		if positions_every != 0 {
-			let mut f = self.create(Self::POSITIONS_FILE)?;
-			writeln!(f, "# time position_x position_y ...")?;
-			self.positions_file = Some(RefCell::new(f));
-		}
-
-		Ok(self)
-	}
-
-	const TIMESTEPS_FILE: &'static str = "timesteps.txt";
-	const POSITIONS_FILE: &'static str = "positions.txt";
-
-	// Create a file in the output directory.
-	fn create(&self, basename: &str) -> Result<BufWriter<File>> {
-		let name = self.output_dir.join(basename);
-		let f = File::create(&name).msg(&format!("create {}", name.to_string_lossy()))?;
-		let buf = BufWriter::new(f);
-		Ok(buf)
-	}
-
-	pub fn with_render_every(mut self, dt: f64) -> Self {
-		self.render_every = dt;
-		self
+	pub fn with_output(self, output_dir: PathBuf, timesteps: bool, positions_every: u32) -> Result<SimWithOutput> {
+		SimWithOutput::new(self, output_dir, timesteps, positions_every)
 	}
 
 	pub fn particles(&self) -> &[Particle] {
 		&self.particles
 	}
 
+	pub fn time(&self) -> f64 {
+		self.time
+	}
+
+	pub fn dt(&self) -> f64 {
+		self.dt
+	}
+
+	pub fn step(&self) -> u64 {
+		self.step
+	}
+
 	/// Advance time by exactly total_time, without writing any output.
 	/// Intended for tests.
 	pub fn advance(&mut self, total_time: f64) {
 		// advance with no-op, no-error output function.
-		self.advance_(total_time, |_| Ok(())).unwrap()
-	}
-
-	/// Advance time by exactly total_time.
-	/// Write output files if configured so.
-	pub fn advance_with_output(&mut self, total_time: f64) -> Result<()> {
-		self.advance_(total_time, |s| s.do_output())
+		self.advance_with_output(total_time, |_| Ok(())).unwrap()
 	}
 
 	/// Advance time by exactly total_time.
 	/// Calls outfn(self) on each step, which may save output.
-	fn advance_<F: Fn(&Self) -> Result<()>>(&mut self, total_time: f64, outfn: F) -> Result<()> {
+	pub fn advance_with_output<F: Fn(&Self) -> Result<()>>(&mut self, total_time: f64, outfn: F) -> Result<()> {
 		// Output initial state
 		//self.do_output()?;
 		outfn(&self)?;
@@ -165,53 +123,23 @@ impl Simulation {
 
 	fn update_dt(&mut self) {
 		// works but test must be updated
-		// let mut adjust = self.target_error / self.relative_error();
-		// if adjust > 1.4 {
-		// 	adjust = 1.4;
-		// }
-		// if adjust < 0.1 {
-		// 	adjust = 0.1;
-		// }
-		// self.dt *= adjust;
+		let mut adjust = self.target_error / self.relative_error();
+		if adjust > 1.4 {
+			adjust = 1.4;
+		}
+		if adjust < 0.1 {
+			adjust = 0.1;
+		}
+		self.dt *= adjust;
 	}
 
-	fn relative_error(&self) -> f64 {
+	pub fn relative_error(&self) -> f64 {
 		self.acc1
 			.iter()
 			.zip(self.acc2.iter())
 			.map(|(a1, a2)| (*a1 - *a2).len2() / (*a1 + *a2).len2())
 			.fold(0.0, |max, val| f64::max(max, val))
 			.sqrt() * 2.0
-	}
-
-	fn do_output(&self) -> Result<()> {
-		self.output_timesteps()?;
-		self.output_positions()?;
-		Ok(())
-	}
-
-	fn output_positions(&self) -> Result<()> {
-		if self.positions_every != 0 && self.step % (self.positions_every as u64) == 0 {
-			if let Some(cell) = self.positions_file.as_ref() {
-				let mut w = cell.borrow_mut();
-				write!(w, "{}", self.time)?;
-				for p in self.particles() {
-					write!(w, " {} {}", p.pos.x, p.pos.y)?;
-				}
-				writeln!(w)?;
-				w.flush()?;
-			}
-		}
-		Ok(())
-	}
-
-	fn output_timesteps(&self) -> Result<()> {
-		if let Some(cell) = self.timestep_file.as_ref() {
-			let mut w = cell.borrow_mut();
-			writeln!(w, "{}\t{}\t{}", self.time, self.dt, self.relative_error())?;
-			w.flush()?;
-		}
-		Ok(())
 	}
 }
 
