@@ -106,8 +106,8 @@ impl Simulation {
 	// Acceleration must be up-to-date before step,
 	// will be up-to-date after step (ready for next use).
 	//
-	// Does not write output files.
-	fn step(&mut self, dt: f64) {
+	// Does not write output files. TODO: do write ouput.
+	pub fn step(&mut self, dt: f64) {
 		// https://en.wikipedia.org/wiki/Leapfrog_integration#Algorithm, "synchronized" form.
 
 		// "drift" the positions with previous velocities and acceleration.
@@ -147,7 +147,7 @@ impl Simulation {
 			.zip(self.acc2.iter())
 			.map(|(a1, a2)| (*a1 - *a2).len2() / (*a1 + *a2).len2())
 			.fold(0.0, |max, val| f64::max(max, val))
-			.sqrt() * 0.5
+			.sqrt() * 2.0
 	}
 }
 
