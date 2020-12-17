@@ -1,7 +1,6 @@
 use super::bruteforce;
 use super::prelude::*;
 use std::mem::swap;
-use std::path::PathBuf;
 
 pub struct Simulation {
 	particles: Vec<Particle>,
@@ -66,22 +65,23 @@ impl Simulation {
 	}
 
 	/// Advance time by exactly total_time, without writing any output.
-	/// Intended for tests.
 	pub fn advance(&mut self, total_time: f64) {
 		// advance with no-op, no-error output function.
 		self.advance_with_callback(total_time, |_| Ok(())).unwrap()
 	}
 
+	/// Advance time by exactly
 	pub fn advance_with_output(&mut self, total_time: f64, outputs: &mut Outputs) -> Result<()> {
 		self.advance_with_callback(total_time, |s| outputs.do_output(s))
 	}
 
 	/// Advance time by exactly total_time.
 	/// Calls outfn(self) on each step, which may save output.
-	fn advance_with_callback<F: Fn(&Self) -> Result<()>>(&mut self, total_time: f64, outfn: F) -> Result<()> {
+	fn advance_with_callback<F: FnMut(&Self) -> Result<()>>(&mut self, total_time: f64, mut outfn: F) -> Result<()> {
 		// Output initial state
-		//self.do_output()?;
-		outfn(&self)?;
+		if self.step_count == 0 {
+			outfn(&self)?;
+		}
 
 		// Take normal time steps until just before the end time,
 		// then take one last step, truncated to fit total_time exactly.

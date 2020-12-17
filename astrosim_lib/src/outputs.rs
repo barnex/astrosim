@@ -1,5 +1,4 @@
 use super::prelude::*;
-use std::cell::RefCell;
 use std::fs;
 use std::fs::File;
 use std::io::BufWriter;
@@ -10,8 +9,8 @@ pub struct Outputs {
 	output_dir: PathBuf,
 	render_every: f64,
 	positions_every: u32,
-	timestep_file: Option<RefCell<BufWriter<File>>>, // TODO: rm refcell
-	positions_file: Option<RefCell<BufWriter<File>>>,
+	timestep_file: Option<BufWriter<File>>,
+	positions_file: Option<BufWriter<File>>,
 }
 
 impl Outputs {
@@ -24,7 +23,7 @@ impl Outputs {
 		let timestep_file = if timesteps {
 			let mut f = Self::create(&output_dir, Self::TIMESTEPS_FILE)?;
 			writeln!(f, "# time dt error")?;
-			Some(RefCell::new(f))
+			Some(f)
 		} else {
 			None
 		};
@@ -32,7 +31,7 @@ impl Outputs {
 		let positions_file = if positions_every != 0 {
 			let mut f = Self::create(&output_dir, Self::POSITIONS_FILE)?;
 			writeln!(f, "# time position_x position_y ...")?;
-			Some(RefCell::new(f))
+			Some(f)
 		} else {
 			None
 		};
@@ -54,16 +53,15 @@ impl Outputs {
 		Ok(buf)
 	}
 
-	pub fn do_output(&self, sim: &Simulation) -> Result<()> {
+	pub fn do_output(&mut self, sim: &Simulation) -> Result<()> {
 		self.output_timesteps(sim)?;
 		self.output_positions(sim)?;
 		Ok(())
 	}
 
-	fn output_positions(&self, sim: &Simulation) -> Result<()> {
+	fn output_positions(&mut self, sim: &Simulation) -> Result<()> {
 		if self.positions_every != 0 && sim.step_count() % (self.positions_every as u64) == 0 {
-			if let Some(cell) = self.positions_file.as_ref() {
-				let mut w = cell.borrow_mut();
+			if let Some(w) = self.positions_file.as_mut() {
 				write!(w, "{}", sim.time())?;
 				for p in sim.particles() {
 					write!(w, " {} {}", p.pos.x, p.pos.y)?;
@@ -75,9 +73,8 @@ impl Outputs {
 		Ok(())
 	}
 
-	fn output_timesteps(&self, sim: &Simulation) -> Result<()> {
-		if let Some(cell) = self.timestep_file.as_ref() {
-			let mut w = cell.borrow_mut();
+	fn output_timesteps(&mut self, sim: &Simulation) -> Result<()> {
+		if let Some(w) = self.timestep_file.as_mut() {
 			writeln!(w, "{}\t{}\t{}", sim.time(), sim.dt(), sim.relative_error())?;
 			w.flush()?;
 		}
