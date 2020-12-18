@@ -21,10 +21,19 @@ pub struct Simulation {
 pub type ForceFn = Box<dyn Fn(&[Particle], &mut [vec2])>;
 
 impl Simulation {
-	pub fn new(particles: Vec<Particle>) -> Self {
+	pub fn new(mut particles: Vec<Particle>) -> Self {
+		sort_by_mass(&mut particles);
+		let cutoff = first_massless(&particles);
+		Self::with_force(particles, move |p, a| bruteforce::set_accel_massless(p, a, cutoff))
+	}
+
+	pub fn with_force<F>(particles: Vec<Particle>, force: F) -> Self
+	where
+		F: Fn(&[Particle], &mut [vec2]) + 'static,
+	{
 		// Set-up the initial accelartion once,
 		// assumed initialized by step().
-		let force = Box::new(bruteforce::set_accel);
+		let force = Box::new(force);
 		let mut acc1 = zeros(particles.len());
 		force(&particles, &mut acc1);
 

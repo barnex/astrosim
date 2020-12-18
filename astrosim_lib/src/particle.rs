@@ -39,3 +39,16 @@ pub fn remove_net_momentum(particles: &mut [Particle]) {
 		p.vel -= delta_v;
 	}
 }
+
+pub fn sort_by_mass(particles: &mut [Particle]) {
+	particles.sort_by(|a, b| b.mass.partial_cmp(&a.mass).unwrap())
+}
+
+pub fn first_massless(particles: &[Particle]) -> usize {
+	for (i, p) in particles.iter().enumerate() {
+		if p.mass == 0.0 {
+			return i;
+		}
+	}
+	particles.len()
+}

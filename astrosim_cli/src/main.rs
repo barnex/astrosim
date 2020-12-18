@@ -78,6 +78,9 @@ fn main_checked() -> Result<()> {
 		remove_net_momentum(&mut particles);
 	}
 
+	//sort_by_mass(&mut particles);
+	//println!("{:?}", &particles[0]);
+
 	let output_dir = output_dir(&args);
 
 	println!("input files:           {}", &args.files.join(","));

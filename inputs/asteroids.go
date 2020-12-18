@@ -18,7 +18,7 @@ func main() {
 	for i := 0; i < *flagN; i++ {
 
 		dr := float64(i) / float64(*flagN)
-		r := rmin + dr * (rmax - rmin)
+		r := Sqrt(rmin + dr * (rmax - rmin))
 
 		theta := rnd(0.0, 2*Pi)
 		v := Sqrt(1 / r)

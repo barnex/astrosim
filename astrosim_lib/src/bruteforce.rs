@@ -32,6 +32,30 @@ pub fn set_accel(particles: &[Particle], acc: &mut [vec2]) {
 	}
 }
 
+/// Like `accel`, but store the result in an existing vector,
+/// which must have the same length as `particles`.
+pub fn set_accel_massless(particles: &[Particle], acc: &mut [vec2], massless: usize) {
+	debug_assert!(particles.len() == acc.len());
+
+	for i in 0..acc.len() {
+		acc[i] = vec2::ZERO;
+	}
+	for (i, pi) in particles[..massless].iter().enumerate() {
+		let mut acci = vec2::ZERO;
+		for j in (i + 1)..particles.len() {
+			let pj = &particles[j];
+			let delta = pj.pos - pi.pos;
+			let len2 = delta.dot(delta);
+			let len = len2.sqrt();
+			let len3 = len2 * len;
+			let acc_reduced = delta / len3;
+			acci += acc_reduced * pj.mass;
+			acc[j] -= acc_reduced * pi.mass;
+		}
+		acc[i] += acci;
+	}
+}
+
 #[cfg(test)]
 mod test {
 	use super::*;
