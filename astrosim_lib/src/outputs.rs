@@ -1,3 +1,4 @@
+extern crate image;
 use super::prelude::*;
 use std::fs;
 use std::fs::File;
@@ -17,6 +18,7 @@ pub struct Outputs {
 impl Outputs {
 	const TIMESTEPS_FILE: &'static str = "timesteps.txt";
 	const POSITIONS_FILE: &'static str = "positions.txt";
+	const DENSITY_FILE: &'static str = "density.png";
 
 	/// Outputs that will write to files in output_dir.
 	/// Individual outputs still need to be enabled. E.g.:
@@ -62,13 +64,41 @@ impl Outputs {
 		Ok(self)
 	}
 
+	/// Enables writing a time-averaged density image of size pixels x pixels.
+	pub fn with_density(mut self, pixels: u32) -> Result<Self> {
+		self.density = if pixels != 0 { Some(Image::new(pixels, pixels)) } else { None };
+		Ok(self)
+	}
+
+	pub fn close(self) -> Result<()> {
+		self.render_density()?;
+		// TODO: set everything to None, implement close on drop?
+		Ok(())
+	}
+
 	/// To be called after every simulation time step
 	/// to write all configured outputs.
 	pub fn output(&mut self, sim: &Simulation) -> Result<()> {
 		self.output_timesteps(sim)?;
 		self.output_positions(sim)?;
-		//self.render_positions(sim)?;
+		self.accumulate_density(sim);
 		Ok(())
+	}
+
+	fn accumulate_density(&mut self, sim: &Simulation) {
+		if let Some(img) = self.density.as_mut() {
+			let scale = 2.0; // TODO
+				 // TODO: dt is wrong, is for next step should be for current
+			accumulate_density(img, &sim.particles()[1..], scale, sim.dt() as f32)
+		}
+		// let img_data = render::render(particles, pixels, scale);
+		// let img = image::ImageBuffer::from_fn(pixels, pixels, |x, y| {
+		// 	let v = img_data[y as usize][x as usize];
+		// 	let v = if v == 0.0 { 0u8 } else { 255u8 };
+		// 	image::Rgba([v, v, v, 255])
+		// });
+
+		// Ok(img.save(&path)?)
 	}
 
 	//fn render_positions(&mut self, particles: &[Particle], pixels: u32, scale: f64, i: u32) -> Result<()> {
@@ -83,6 +113,20 @@ impl Outputs {
 
 	//	Ok(img.save(&path)?)
 	//}
+
+	fn render_density(&self) -> Result<()> {
+		if let Some(density) = self.density.as_ref() {
+			let max = density.pixels().iter().fold(0.0, |a, b| f32::max(a, *b));
+			let (w, h) = density.dimensions();
+			let img = image::ImageBuffer::from_fn(w as u32, h as u32, |x, y| {
+				let density = density[y as usize][x as usize];
+				let v = ((density / max).sqrt() * 255.0) as u8;
+				image::Rgba([v, v, v, 255])
+			});
+			img.save(self.output_dir.join(Self::DENSITY_FILE))?;
+		}
+		Ok(())
+	}
 
 	fn output_positions(&mut self, sim: &Simulation) -> Result<()> {
 		if self.positions_every != 0 && sim.step_count() % (self.positions_every as u64) == 0 {

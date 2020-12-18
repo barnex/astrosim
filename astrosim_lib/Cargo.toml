@@ -17,3 +17,4 @@ name = "convergence_adaptive"
 path = "bin/convergence_adaptive.rs"
 
 [dependencies]
+image = "0.23"

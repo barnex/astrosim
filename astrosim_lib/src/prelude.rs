@@ -4,6 +4,7 @@ pub use super::image::*;
 pub use super::math::*;
 pub use super::outputs::*;
 pub use super::particle::*;
+pub use super::render::*;
 pub use super::result::*;
 pub use super::simulation::*;
 

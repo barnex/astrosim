@@ -27,7 +27,6 @@ version = "0.1.0"
 dependencies = [
  "astrosim_lib",
  "csv",
- "image",
  "serde",
  "structopt",
 ]
@@ -42,6 +41,9 @@ dependencies = [
 [[package]]
 name = "astrosim_lib"
 version = "0.1.0"
+dependencies = [
+ "image",
+]
 
 [[package]]
 name = "atty"

@@ -1,9 +1,7 @@
 extern crate astrosim_lib;
-extern crate image;
 extern crate serde;
 extern crate structopt;
 use astrosim_lib::prelude::*;
-use astrosim_lib::render;
 use serde::Deserialize;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -28,7 +26,7 @@ struct Args {
 
 	/// Target relative error per oribit.
 	/// TODO: steps per orbit? default 100?
-	#[structopt(long, default_value = "1e-3")]
+	#[structopt(long, default_value = "0.01")]
 	target_error: f64,
 
 	/// Number of times to save the output.
@@ -40,7 +38,7 @@ struct Args {
 	render_scale: f64,
 
 	/// Render this number of pixels (for image width and height).
-	#[structopt(long, default_value = "255")]
+	#[structopt(long, default_value = "512")]
 	render_pixels: u32,
 
 	/// Enable writing timestep information to output_dir/timesteps.txt.
@@ -88,9 +86,12 @@ fn main_checked() -> Result<()> {
 
 	let mut outputs = Outputs::new(output_dir)? //
 		.with_timesteps(args.timesteps)?
-		.with_positions_every(args.positions_every)?;
+		.with_positions_every(args.positions_every)?
+		.with_density(args.render_pixels)?;
 
 	sim.advance_with_output(args.time, &mut outputs)?;
+
+	outputs.close()?;
 
 	Ok(())
 }
