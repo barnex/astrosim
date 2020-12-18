@@ -73,12 +73,12 @@ fn main_checked() -> Result<()> {
 	let particles = load_particle_files(&args.files)?;
 	let output_dir = output_dir(&args);
 
-	println!("input files:     {}", &args.files.join(","));
-	println!("particles:       {}", particles.len());
-	println!("run time:        {}", args.time);
-	println!("output dir:      {}", &output_dir.to_string_lossy());
-	println!("positions every: {}th time step", args.positions_every);
-	println!("output timesteps:{}", args.timesteps);
+	println!("input files:      {}", &args.files.join(","));
+	println!("particles:        {}", particles.len());
+	println!("run time:         {}", args.time);
+	println!("output dir:       {}", &output_dir.to_string_lossy());
+	println!("positions every:  {} th time step", args.positions_every);
+	println!("output timesteps: {}", args.timesteps);
 
 	let mut sim = Simulation::new(particles);
 	sim.dt = args.initial_dt;
@@ -86,7 +86,10 @@ fn main_checked() -> Result<()> {
 	sim.max_dt = args.max_dt;
 	sim.target_error = args.target_error;
 
-	let mut outputs = Outputs::new(output_dir, args.timesteps, args.positions_every)?;
+	let mut outputs = Outputs::new(output_dir)? //
+		.with_timesteps(args.timesteps)?
+		.with_positions_every(args.positions_every)?;
+
 	sim.advance_with_output(args.time, &mut outputs)?;
 
 	Ok(())

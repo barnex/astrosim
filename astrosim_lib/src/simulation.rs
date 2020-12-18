@@ -72,7 +72,7 @@ impl Simulation {
 
 	/// Advance time by exactly
 	pub fn advance_with_output(&mut self, total_time: f64, outputs: &mut Outputs) -> Result<()> {
-		self.advance_with_callback(total_time, |s| outputs.do_output(s))
+		self.advance_with_callback(total_time, |s| outputs.output(s))
 	}
 
 	/// Advance time by exactly total_time.
