@@ -17,6 +17,7 @@ pub fn set_accel(particles: &[Particle], acc: &mut [vec2]) {
 		acc[i] = vec2::ZERO;
 	}
 	for (i, pi) in particles.iter().enumerate() {
+		let mut acci = vec2::ZERO;
 		for j in (i + 1)..particles.len() {
 			let pj = &particles[j];
 			let delta = pj.pos - pi.pos;
@@ -24,9 +25,10 @@ pub fn set_accel(particles: &[Particle], acc: &mut [vec2]) {
 			let len = len2.sqrt();
 			let len3 = len2 * len;
 			let acc_reduced = delta / len3;
-			acc[i] += acc_reduced * pj.mass;
+			acci += acc_reduced * pj.mass;
 			acc[j] -= acc_reduced * pi.mass;
 		}
+		acc[i] += acci;
 	}
 }
 
