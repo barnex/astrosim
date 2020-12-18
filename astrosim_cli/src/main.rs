@@ -102,9 +102,17 @@ fn main_checked() -> Result<()> {
 		.with_positions_every(args.positions_every)?
 		.with_density(args.render_pixels)?;
 
+	let start = std::time::Instant::now();
+
 	sim.advance_with_output(args.time, &mut outputs)?;
 
+	let duration = start.elapsed();
+	let steps_per_sec = sim.step_count() as f64 / duration.as_secs_f64();
+
 	outputs.close()?;
+
+	println!("done in:               {:.2}s", duration.as_secs_f64());
+	println!("steps per second:      {:.1}", steps_per_sec);
 
 	Ok(())
 }
