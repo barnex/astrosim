@@ -26,7 +26,7 @@ struct Args {
 
 	/// Target relative error per oribit.
 	/// TODO: steps per orbit? default 100?
-	#[structopt(long, default_value = "0.01")]
+	#[structopt(long, default_value = "0.03")]
 	target_error: f64,
 
 	/// Number of times to save the output.
@@ -53,6 +53,9 @@ struct Args {
 	#[structopt(long, short)]
 	output_dir: Option<String>,
 
+	/// Do not remove net momentum from particles (allowing for systematic drift).
+	#[structopt(long)]
+	net_momentum: bool,
 	/// Files to process
 	#[structopt(name = "FILE")]
 	files: Vec<String>,
@@ -68,15 +71,25 @@ fn main() {
 fn main_checked() -> Result<()> {
 	let args = Args::from_args();
 
-	let particles = load_particle_files(&args.files)?;
+	let mut particles = load_particle_files(&args.files)?;
+
+	if !args.net_momentum {
+		// A residual net momentum would cause a systematic drift.
+		remove_net_momentum(&mut particles);
+	}
+
 	let output_dir = output_dir(&args);
 
-	println!("input files:      {}", &args.files.join(","));
-	println!("particles:        {}", particles.len());
-	println!("run time:         {}", args.time);
-	println!("output dir:       {}", &output_dir.to_string_lossy());
-	println!("positions every:  {} th time step", args.positions_every);
-	println!("output timesteps: {}", args.timesteps);
+	println!("input files:           {}", &args.files.join(","));
+	println!("particles:             {}", particles.len());
+	println!("net momentum removed:  {}", !args.net_momentum);
+	println!("run time:              {}", args.time);
+	println!("min time step:         {:e}", args.min_dt);
+	println!("max time step:         {:e}", args.max_dt);
+	println!("target relative error: {:e}", args.target_error);
+	println!("output dir:            {}", &output_dir.to_string_lossy());
+	println!("positions every:       {} th time step", args.positions_every);
+	println!("timesteps.txt:         {}", args.timesteps);
 
 	let mut sim = Simulation::new(particles);
 	sim.dt = args.initial_dt;
