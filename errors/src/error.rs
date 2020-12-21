@@ -1,11 +1,10 @@
 use std::fmt;
 
-// Alias for "any type of error".
-// Consistently used as the only error type throughout astrosim.
+/// Alias for "any type of error".
 pub type Error = Box<dyn std::error::Error>;
 
-// Convieniently constructs an Error from a message. E.g.:
-//	error("launch thrusters offline")
+/// Convieniently constructs an Error from a message. E.g.:
+///	  error("launch thrusters offline")
 pub fn error<S: Into<String>>(msg: S) -> Error {
 	Box::new(ErrorMessage(msg.into()))
 }
