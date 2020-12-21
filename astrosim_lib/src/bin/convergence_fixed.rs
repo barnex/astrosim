@@ -4,7 +4,7 @@ fn main() {
 	let error = |dt| {
 		let particles = vec![Particle::new(1.0, vec2(0.0, 0.0), vec2(0.0, 0.0)), Particle::new(0.0, vec2(0.0, 1.0), vec2(1.0, 0.0))];
 
-		let mut sim = Simulation::new(particles);
+		let mut sim = Stepper::new(particles);
 		sim.fix_dt(dt);
 		sim.advance(20. * PI);
 		let got = sim.particles()[1].pos;

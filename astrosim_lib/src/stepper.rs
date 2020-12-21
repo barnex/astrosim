@@ -2,7 +2,7 @@ use super::bruteforce;
 use super::prelude::*;
 use std::mem::swap;
 
-pub struct Simulation {
+pub struct Stepper {
 	particles: Vec<Particle>,
 	pub target_error: f64,
 	pub min_dt: f64,
@@ -20,7 +20,7 @@ pub struct Simulation {
 // Force function, calculates accelartions due to the particle's interaction.
 pub type ForceFn = Box<dyn Fn(&[Particle], &mut [vec2])>;
 
-impl Simulation {
+impl Stepper {
 	pub fn new(mut particles: Vec<Particle>) -> Self {
 		sort_by_mass(&mut particles);
 		let cutoff = first_massless(&particles);
@@ -39,7 +39,7 @@ impl Simulation {
 		let mut acc1 = zeros(particles.len());
 		force(&particles, &mut acc1);
 
-		Self {
+		Stepper {
 			acc2: acc1.clone(),
 			acc1,
 			particles,
@@ -180,7 +180,7 @@ mod test {
 				Particle::new(1.0, vec2(0.0, 0.0), vec2(0.0, 0.0)), // "sun"
 				Particle::new(0.0, vec2(0.0, 1.0), vec2(1.0, 0.0)), // "earth"
 			];
-			let mut sim = Simulation::new(particles);
+			let mut sim = Stepper::new(particles);
 			sim.fix_dt(dt);
 			sim.advance(PI / 2.0);
 			let got = sim.particles()[1].pos;

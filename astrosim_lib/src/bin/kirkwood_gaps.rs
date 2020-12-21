@@ -9,7 +9,7 @@ fn main() -> Result<()> {
 	fs::create_dir_all(&dir)?;
 
 	let particles = init_particles();
-	let mut sim = Simulation::new(particles);
+	let mut sim = Stepper::new(particles);
 
 	//let mut out = Outputs::new("kirwood_gaps.out")?;
 
@@ -17,7 +17,7 @@ fn main() -> Result<()> {
 	let mut img = Image::<f32>::new(w, h);
 
 	let scale = 2.0;
-	for i in 0..10000 {
+	for _i in 0..10000 {
 		sim.step();
 		accumulate_density(&mut img, &sim.particles()[1..], scale, sim.dt() as f32);
 	}

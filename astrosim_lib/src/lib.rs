@@ -1,10 +1,10 @@
 pub mod bruteforce;
-pub mod image;
-pub mod math;
-pub mod outputs;
-pub mod particle;
-pub mod render;
-pub mod simulation;
-pub mod verlet;
+mod image;
+mod math;
+mod outputs;
+mod particle;
+mod render;
+mod stepper;
+mod verlet;
 
 pub mod prelude;

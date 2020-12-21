@@ -88,7 +88,7 @@ impl Outputs {
 
 	/// To be called after every simulation time step
 	/// to write all configured outputs.
-	pub fn output(&mut self, sim: &Simulation) -> Result<()> {
+	pub fn output(&mut self, sim: &Stepper) -> Result<()> {
 		self.output_timesteps(sim)?;
 		self.output_positions(sim)?;
 		self.accumulate_density(sim);
@@ -96,7 +96,7 @@ impl Outputs {
 		Ok(())
 	}
 
-	fn accumulate_density(&mut self, sim: &Simulation) {
+	fn accumulate_density(&mut self, sim: &Stepper) {
 		if let Some(img) = self.density.as_mut() {
 			let scale = 2.0; // TODO
 				 // TODO: dt is wrong, is for next step should be for current
@@ -104,7 +104,7 @@ impl Outputs {
 		}
 	}
 
-	fn render(&mut self, sim: &Simulation) -> Result<()> {
+	fn render(&mut self, sim: &Stepper) -> Result<()> {
 		if let Some(img) = self.density.as_mut() {
 			if self.render_every != 0.0 && sim.time() % self.render_every <= sim.dt {
 				if sim.time() >= self.render_next {
@@ -145,7 +145,7 @@ impl Outputs {
 		Ok(())
 	}
 
-	fn output_positions(&mut self, sim: &Simulation) -> Result<()> {
+	fn output_positions(&mut self, sim: &Stepper) -> Result<()> {
 		if self.positions_every != 0 && sim.step_count() % (self.positions_every as u64) == 0 {
 			if let Some(w) = self.positions_file.as_mut() {
 				write!(w, "{}", sim.time())?;
@@ -159,7 +159,7 @@ impl Outputs {
 		Ok(())
 	}
 
-	fn output_timesteps(&mut self, sim: &Simulation) -> Result<()> {
+	fn output_timesteps(&mut self, sim: &Stepper) -> Result<()> {
 		if let Some(w) = self.timestep_file.as_mut() {
 			writeln!(w, "{}\t{}\t{}", sim.time(), sim.dt(), sim.relative_error())?;
 			w.flush()?;
