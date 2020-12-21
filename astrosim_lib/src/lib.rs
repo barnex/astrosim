@@ -1,4 +1,3 @@
-pub mod adaptive;
 pub mod bruteforce;
 pub mod error;
 pub mod errormessage;
