@@ -27,10 +27,12 @@ impl Simulation {
 		Self::with_force(particles, move |p, a| bruteforce::set_accel_massless(p, a, cutoff))
 	}
 
-	pub fn with_force<F>(particles: Vec<Particle>, force: F) -> Self
+	pub fn with_force<F>(mut particles: Vec<Particle>, force: F) -> Self
 	where
 		F: Fn(&[Particle], &mut [vec2]) + 'static,
 	{
+		remove_net_momentum(&mut particles);
+
 		// Set-up the initial accelartion once,
 		// assumed initialized by step().
 		let force = Box::new(force);
@@ -96,13 +98,13 @@ impl Simulation {
 		// then take one last step, truncated to fit total_time exactly.
 		let end_time = self.time + total_time;
 		while self.time + self.dt < end_time {
-			self.step(self.dt);
+			self.step_with_dt(self.dt);
 			outfn(&self)?;
 			self.adjust_dt();
 		}
 		let final_dt = end_time - self.time;
 		if final_dt > 0.0 {
-			self.step(final_dt);
+			self.step_with_dt(final_dt);
 			outfn(&self)?;
 			// truncated time step is not representative,
 			// don't adjust dt based on it.
@@ -110,12 +112,19 @@ impl Simulation {
 		Ok(())
 	}
 
+	/// Take a single time step, with dt automatically adjusted
+	/// based on the previous step's error estimate.
+	pub fn step(&mut self) {
+		if self.step_count != 0 {
+			self.adjust_dt();
+		}
+		self.step_with_dt(self.dt);
+	}
+
 	// Take a single time step of size `dt`.
 	// Acceleration must be up-to-date before step,
 	// will be up-to-date after step (ready for next use).
-	//
-	// Does not write output files. TODO: do write ouput.
-	pub fn step(&mut self, dt: f64) {
+	pub fn step_with_dt(&mut self, dt: f64) {
 		// https://en.wikipedia.org/wiki/Leapfrog_integration#Algorithm, "synchronized" form.
 
 		// "drift" the positions with previous velocities and acceleration.

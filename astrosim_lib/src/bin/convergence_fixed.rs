@@ -9,7 +9,7 @@ fn main() {
 		sim.advance(20. * PI);
 		let got = sim.particles()[1].pos;
 		let want = vec2(0.0, 1.0); // travelled one orbit
-		sim.step(dt);
+		sim.step_with_dt(dt);
 		let err_per_step = sim.relative_error();
 		(err_per_step, (got - want).len())
 	};

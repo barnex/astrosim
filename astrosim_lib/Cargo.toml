@@ -4,17 +4,7 @@ version = "0.1.0"
 authors = ["arne"]
 edition = "2018"
 
-[[bin]]
-name = "benchmark"
-path = "bin/benchmark.rs"
-
-[[bin]]
-name = "convergence_fixed"
-path = "bin/convergence_fixed.rs"
-
-[[bin]]
-name = "convergence_adaptive"
-path = "bin/convergence_adaptive.rs"
 
 [dependencies]
 image = "0.23"
+rand = "0.8"

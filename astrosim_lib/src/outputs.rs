@@ -8,7 +8,10 @@ use std::path::{Path, PathBuf};
 
 pub struct Outputs {
 	output_dir: PathBuf,
+
 	render_every: f64,
+	render_next: f64,
+
 	density: Option<Image<f32>>,
 	positions_every: u32,
 	timestep_file: Option<BufWriter<File>>,
@@ -27,16 +30,17 @@ impl Outputs {
 	///        .with_timesteps(true)?
 	///        .with_positions_every(1)?;
 	///
-	pub fn new(output_dir: PathBuf) -> Result<Self> {
+	pub fn new<P: AsRef<Path>>(output_dir: P) -> Result<Self> {
 		fs::create_dir_all(&output_dir)?;
 
 		Ok(Self {
 			render_every: 0.0, // TODO
 			positions_every: 0,
-			output_dir,
+			output_dir: output_dir.as_ref().into(),
 			timestep_file: None,
 			positions_file: None,
 			density: None,
+			render_next: 0.0,
 		})
 	}
 
@@ -70,8 +74,14 @@ impl Outputs {
 		Ok(self)
 	}
 
+	///
+	pub fn with_render_every(mut self, every: f64) -> Result<Self> {
+		self.render_every = every;
+		Ok(self)
+	}
+
 	pub fn close(self) -> Result<()> {
-		self.render_density()?;
+		//Self::render_density_file(&self.denSelf::DENSITY_FILE)?;
 		// TODO: set everything to None, implement close on drop?
 		Ok(())
 	}
@@ -82,6 +92,7 @@ impl Outputs {
 		self.output_timesteps(sim)?;
 		self.output_positions(sim)?;
 		self.accumulate_density(sim);
+		self.render(sim)?;
 		Ok(())
 	}
 
@@ -91,14 +102,22 @@ impl Outputs {
 				 // TODO: dt is wrong, is for next step should be for current
 			accumulate_density(img, &sim.particles()[1..], scale, sim.dt() as f32)
 		}
-		// let img_data = render::render(particles, pixels, scale);
-		// let img = image::ImageBuffer::from_fn(pixels, pixels, |x, y| {
-		// 	let v = img_data[y as usize][x as usize];
-		// 	let v = if v == 0.0 { 0u8 } else { 255u8 };
-		// 	image::Rgba([v, v, v, 255])
-		// });
+	}
 
-		// Ok(img.save(&path)?)
+	fn render(&mut self, sim: &Simulation) -> Result<()> {
+		if let Some(img) = self.density.as_mut() {
+			if self.render_every != 0.0 && sim.time() % self.render_every <= sim.dt {
+				if sim.time() >= self.render_next {
+					let file = self.output_dir.join(&format!("density_{:09}.png", sim.step_count()));
+					Self::render_density_file(&img, &file)?;
+					for p in img.pixels_mut() {
+						*p = 0.0
+					}
+					self.render_next += self.render_every;
+				}
+			}
+		}
+		Ok(())
 	}
 
 	//fn render_positions(&mut self, particles: &[Particle], pixels: u32, scale: f64, i: u32) -> Result<()> {
@@ -114,17 +133,15 @@ impl Outputs {
 	//	Ok(img.save(&path)?)
 	//}
 
-	fn render_density(&self) -> Result<()> {
-		if let Some(density) = self.density.as_ref() {
-			let max = density.pixels().iter().fold(0.0, |a, b| f32::max(a, *b));
-			let (w, h) = density.dimensions();
-			let img = image::ImageBuffer::from_fn(w as u32, h as u32, |x, y| {
-				let density = density[y as usize][x as usize];
-				let v = ((density / max).sqrt() * 255.0) as u8;
-				image::Rgba([v, v, v, 255])
-			});
-			img.save(self.output_dir.join(Self::DENSITY_FILE))?;
-		}
+	fn render_density_file(density: &Image<f32>, file: &Path) -> Result<()> {
+		let max = density.pixels().iter().fold(0.0, |a, b| f32::max(a, *b));
+		let (w, h) = density.dimensions();
+		let img = image::ImageBuffer::from_fn(w as u32, h as u32, |x, y| {
+			let density = density[y as usize][x as usize];
+			let v = ((density / max).sqrt() * 255.0) as u8;
+			image::Rgba([v, v, v, 255])
+		});
+		img.save(file)?;
 		Ok(())
 	}
 

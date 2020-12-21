@@ -1,7 +1,20 @@
 use super::image::Image;
 use super::prelude::*;
+use std::path::Path;
 
-pub fn render(particles: &[Particle], npix: u32, scale: f64) -> Image<f32> {
+pub fn save_density<P: AsRef<Path>>(density: &Image<f32>, file: P) -> Result<()> {
+	let max = density.pixels().iter().fold(0.0, |a, b| f32::max(a, *b));
+	let (w, h) = density.dimensions();
+	let img = image::ImageBuffer::from_fn(w as u32, h as u32, |x, y| {
+		let density = density[y as usize][x as usize];
+		let v = ((density / max).sqrt() * 255.0) as u8;
+		image::Rgba([v, v, v, 255])
+	});
+	img.save(file)?;
+	Ok(())
+}
+
+pub fn render_density(particles: &[Particle], npix: u32, scale: f64) -> Image<f32> {
 	let mut img = Image::new(npix, npix);
 
 	for p in particles {

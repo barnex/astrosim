@@ -49,6 +49,10 @@ struct Args {
 	#[structopt(long, short, default_value = "0")]
 	positions_every: u32,
 
+	/// Render particle positions as image at this interval.
+	#[structopt(long, short, default_value = "0")]
+	render_every: f64,
+
 	/// Manually specify output directory.
 	#[structopt(long, short)]
 	output_dir: Option<String>,
@@ -73,10 +77,10 @@ fn main_checked() -> Result<()> {
 
 	let mut particles = load_particle_files(&args.files)?;
 
-	if !args.net_momentum {
-		// A residual net momentum would cause a systematic drift.
-		remove_net_momentum(&mut particles);
-	}
+	//if !args.net_momentum {
+	//	// A residual net momentum would cause a systematic drift.
+	//	remove_net_momentum(&mut particles);
+	//}
 
 	//sort_by_mass(&mut particles);
 	//println!("{:?}", &particles[0]);
@@ -91,6 +95,7 @@ fn main_checked() -> Result<()> {
 	println!("max time step:         {:e}", args.max_dt);
 	println!("target relative error: {:e}", args.target_error);
 	println!("output dir:            {}", &output_dir.to_string_lossy());
+	println!("render every:          {} t", args.render_every);
 	println!("positions every:       {} th time step", args.positions_every);
 	println!("timesteps.txt:         {}", args.timesteps);
 
@@ -103,7 +108,8 @@ fn main_checked() -> Result<()> {
 	let mut outputs = Outputs::new(output_dir)? //
 		.with_timesteps(args.timesteps)?
 		.with_positions_every(args.positions_every)?
-		.with_density(args.render_pixels)?;
+		.with_density(args.render_pixels)?
+		.with_render_every(args.render_every)?;
 
 	let start = std::time::Instant::now();
 
