@@ -4,15 +4,15 @@ use std::mem::swap;
 
 pub struct Stepper {
 	particles: Vec<Particle>,
+	force: ForceFn,
 	pub target_error: f64,
 	pub min_dt: f64,
 	pub max_dt: f64,
 
+	pub dt: f64,
 	step_count: u64,
 	time: f64,
-	pub dt: f64,
 
-	force: ForceFn,
 	acc1: Vec<vec2>,
 	acc2: Vec<vec2>,
 }

@@ -32,8 +32,7 @@ pub fn set_accel(particles: &[Particle], acc: &mut [vec2]) {
 	}
 }
 
-/// Like `accel`, but store the result in an existing vector,
-/// which must have the same length as `particles`.
+///
 pub fn set_accel_massless(particles: &[Particle], acc: &mut [vec2], massless: usize) {
 	debug_assert!(particles.len() == acc.len());
 
