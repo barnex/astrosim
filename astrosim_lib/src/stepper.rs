@@ -45,8 +45,8 @@ impl Stepper {
 			particles,
 			step_count: 0,
 			time: 0.0,
-			dt: 1e-5,            // small initial time step, grows as needed, TODO
-			target_error: 0.001, //TODO
+			dt: 1e-5,           // small initial time step, grows as needed, TODO
+			target_error: 0.01, //TODO
 			min_dt: 0.0,
 			max_dt: INF,
 			force,
@@ -88,7 +88,7 @@ impl Stepper {
 
 	/// Advance time by exactly total_time.
 	/// Calls outfn(self) on each step, which may save output.
-	fn advance_with_callback<F: FnMut(&Self) -> Result<()>>(&mut self, total_time: f64, mut outfn: F) -> Result<()> {
+	pub fn advance_with_callback<F: FnMut(&Self) -> Result<()>>(&mut self, total_time: f64, mut outfn: F) -> Result<()> {
 		// Output initial state
 		if self.step_count == 0 {
 			outfn(&self)?;

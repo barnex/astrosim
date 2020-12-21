@@ -3,27 +3,38 @@ use astrosim_lib::prelude::*;
 use std::fs;
 use std::path::PathBuf;
 
-const NUM_ASTEROIDS: usize = 10000;
+const NUM_ASTEROIDS: usize = 5000;
 fn main() -> Result<()> {
-	let dir = PathBuf::from("kirwood_gaps.out");
+	let dir = PathBuf::from("kirkwood_gaps2.out");
 	fs::create_dir_all(&dir)?;
 
 	let particles = init_particles();
 	let mut sim = Stepper::new(particles);
-
-	//let mut out = Outputs::new("kirwood_gaps.out")?;
+	sim.target_error = 0.003;
+	sim.min_dt = 0.00001;
 
 	let (w, h) = (512, 512);
 	let mut img = Image::<f32>::new(w, h);
-
 	let scale = 2.0;
-	for _i in 0..10000 {
-		sim.step();
-		accumulate_density(&mut img, &sim.particles()[1..], scale, sim.dt() as f32);
+
+	for i in 0..10000 {
+		println!("i: {}, dt: {}", i, sim.dt);
+		let delta = (i as f64) * 0.0003;
+		sim.advance_with_callback(delta, |s| Ok(accumulate_density(&mut img, &s.particles()[1..], scale, s.dt() as f32)))?;
+
+		save_density(&img, &dir.join(format!("density{:04}.png", i)))?;
+		//img.clear();
+		clear(&mut img);
 	}
-	save_density(&img, &dir.join("density_final.png"))?;
 
 	Ok(())
+}
+
+fn clear(img: &mut Image<f32>) {
+	//img.clear();
+	for p in img.pixels_mut() {
+		*p = 0.0;
+	}
 }
 
 fn init_particles() -> Vec<Particle> {
@@ -31,7 +42,7 @@ fn init_particles() -> Vec<Particle> {
 		Particle::new(1.0, vec2(0.0, 0.0), vec2(0.0, 0.0)),  // sun
 		Particle::new(1e-3, vec2(1.0, 0.0), vec2(0.0, 0.1)), // jupiter
 	];
-	particles.append(&mut asteroids(NUM_ASTEROIDS, 0.5, 1.5));
+	particles.append(&mut asteroids(NUM_ASTEROIDS, 0.3, 1.7));
 	particles
 }
 
