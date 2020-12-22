@@ -1,3 +1,4 @@
+/*
 extern crate image;
 use super::prelude::*;
 use std::fs;
@@ -145,7 +146,7 @@ impl Outputs {
 		Ok(())
 	}
 
-	fn output_positions(&mut self, sim: &Stepper) -> Result<()> {
+	fn output_positions<F: Forces>(&mut self, sim: &Stepper<F>) -> Result<()> {
 		if self.positions_every != 0 && sim.step_count() % (self.positions_every as u64) == 0 {
 			if let Some(w) = self.positions_file.as_mut() {
 				write!(w, "{}", sim.time())?;
@@ -159,7 +160,7 @@ impl Outputs {
 		Ok(())
 	}
 
-	fn output_timesteps(&mut self, sim: &Stepper) -> Result<()> {
+	fn output_timesteps<F: Forces>(&mut self, sim: &Stepper<F>) -> Result<()> {
 		if let Some(w) = self.timestep_file.as_mut() {
 			writeln!(w, "{}\t{}\t{}", sim.time(), sim.dt(), sim.relative_error())?;
 			w.flush()?;
@@ -175,3 +176,4 @@ impl Outputs {
 		Ok(buf)
 	}
 }
+*/

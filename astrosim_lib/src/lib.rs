@@ -1,10 +1,11 @@
-pub mod bruteforce;
+mod brute_force;
+mod forces;
 mod image;
 mod math;
 mod outputs;
+mod partial_force;
 mod particle;
 mod render;
 mod stepper;
-mod verlet;
 
 pub mod prelude;

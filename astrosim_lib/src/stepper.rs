@@ -1,10 +1,9 @@
-use super::bruteforce;
 use super::prelude::*;
 use std::mem::swap;
 
-pub struct Stepper {
+pub struct Stepper<F: Forces> {
 	particles: Vec<Particle>,
-	force: ForceFn,
+	force: F,
 	pub target_error: f64,
 	pub min_dt: f64,
 	pub max_dt: f64,
@@ -17,29 +16,22 @@ pub struct Stepper {
 	acc2: Vec<vec2>,
 }
 
-// Force function, calculates accelartions due to the particle's interaction.
-pub type ForceFn = Box<dyn Fn(&[Particle], &mut [vec2])>;
+impl<F: Forces> Stepper<F> {
+	//pub fn new(mut particles: Vec<Particle>) -> Self {
+	//	sort_by_mass(&mut particles);
+	//	let cutoff = first_massless(&particles);
+	//	Self::with_force(particles, move |p, a| bruteforce::set_accel_massless(p, a, cutoff))
+	//}
 
-impl Stepper {
-	pub fn new(mut particles: Vec<Particle>) -> Self {
-		sort_by_mass(&mut particles);
-		let cutoff = first_massless(&particles);
-		Self::with_force(particles, move |p, a| bruteforce::set_accel_massless(p, a, cutoff))
-	}
-
-	pub fn with_force<F>(mut particles: Vec<Particle>, force: F) -> Self
-	where
-		F: Fn(&[Particle], &mut [vec2]) + 'static,
-	{
+	pub fn new(mut particles: Vec<Particle>, force: F) -> Self {
 		remove_net_momentum(&mut particles);
 
 		// Set-up the initial accelartion once,
 		// assumed initialized by step().
-		let force = Box::new(force);
 		let mut acc1 = zeros(particles.len());
-		force(&particles, &mut acc1);
+		force.set_accel(&particles, &mut acc1);
 
-		Stepper {
+		Self {
 			acc2: acc1.clone(),
 			acc1,
 			particles,
@@ -82,13 +74,13 @@ impl Stepper {
 	}
 
 	/// Advance time by exactly
-	pub fn advance_with_output(&mut self, total_time: f64, outputs: &mut Outputs) -> Result<()> {
-		self.advance_with_callback(total_time, |s| outputs.output(s))
-	}
+	// pub fn advance_with_output(&mut self, total_time: f64, outputs: &mut Outputs) -> Result<()> {
+	// 	self.advance_with_callback(total_time, |s| outputs.output(s))
+	// }
 
 	/// Advance time by exactly total_time.
 	/// Calls outfn(self) on each step, which may save output.
-	pub fn advance_with_callback<F: FnMut(&Self) -> Result<()>>(&mut self, total_time: f64, mut outfn: F) -> Result<()> {
+	pub fn advance_with_callback<C: FnMut(&Self) -> Result<()>>(&mut self, total_time: f64, mut outfn: C) -> Result<()> {
 		// Output initial state
 		if self.step_count == 0 {
 			outfn(&self)?;
@@ -134,7 +126,7 @@ impl Stepper {
 		}
 
 		// update acc2
-		(self.force)(&self.particles, &mut self.acc2);
+		self.force.set_accel(&self.particles, &mut self.acc2);
 
 		// "kick" the velocity with the average accelartion over the step.
 		for (i, p) in self.particles.iter_mut().enumerate() {
@@ -180,7 +172,7 @@ mod test {
 				Particle::new(1.0, vec2(0.0, 0.0), vec2(0.0, 0.0)), // "sun"
 				Particle::new(0.0, vec2(0.0, 1.0), vec2(1.0, 0.0)), // "earth"
 			];
-			let mut sim = Stepper::new(particles);
+			let mut sim = Stepper::new(particles, BruteForce::new());
 			sim.fix_dt(dt);
 			sim.advance(PI / 2.0);
 			let got = sim.particles()[1].pos;

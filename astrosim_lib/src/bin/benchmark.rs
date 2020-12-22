@@ -1,4 +1,3 @@
-use astrosim_lib::bruteforce;
 use astrosim_lib::prelude::*;
 use std::time::Instant;
 
@@ -15,7 +14,7 @@ fn benchmark(n: usize) {
 	let mut acc = zeros(n);
 
 	let start = Instant::now();
-	bruteforce::set_accel(&particles, &mut acc);
+	(BruteForce()).set_accel(&particles, &mut acc);
 
 	let duration = start.elapsed();
 

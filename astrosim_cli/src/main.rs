@@ -99,7 +99,7 @@ fn main_checked() -> Result<()> {
 	println!("positions every:       {} th time step", args.positions_every);
 	println!("timesteps.txt:         {}", args.timesteps);
 
-	let mut sim = Stepper::new(particles);
+	let mut sim = Stepper::new(particles, BruteForce::boxed());
 	sim.dt = args.initial_dt;
 	sim.min_dt = args.min_dt;
 	sim.max_dt = args.max_dt;
